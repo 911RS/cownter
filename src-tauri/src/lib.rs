@@ -25,6 +25,20 @@ pub(crate) fn set_autostart(app: &AppHandle, on: bool) -> Result<(), String> {
     res.map_err(|e| format!("could not change launch at login: {e}"))
 }
 
+/// Rewrites the login entry so it points at the running binary. Debug builds are skipped
+/// because they need the dev server and must never replace the installed app's entry.
+fn sync_autostart(app: &AppHandle, on: bool) {
+    if cfg!(debug_assertions) {
+        return;
+    }
+    let enabled = app.autolaunch().is_enabled().unwrap_or(false);
+    if on || enabled {
+        if let Err(e) = set_autostart(app, on) {
+            eprintln!("{e}");
+        }
+    }
+}
+
 pub(crate) fn toggle_hidden(app: &AppHandle) {
     let Some(state) = app.try_state::<AppState>() else { return };
     let mut cfg = state.display();
@@ -84,6 +98,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = hotkeys::register(&handle, &display) {
         eprintln!("{e}");
     }
+    sync_autostart(&handle, display.launch_at_login);
     windows::sync(&handle, &display);
     refresh_tray(&handle);
     let later = handle.clone();

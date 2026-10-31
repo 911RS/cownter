@@ -79,20 +79,24 @@ html.widget, html.widget body {
 
 /* Pop */
 .pop {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: calc(10px * var(--s));
+  gap: calc(12px * var(--s));
   background: var(--bg, #000);
-  border-radius: calc(30px * var(--s) * var(--r, 1));
-  padding: calc(8px * var(--s)) calc(18px * var(--s)) calc(8px * var(--s)) calc(8px * var(--s));
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  border-radius: calc(12px * var(--s) * var(--r, 1));
+  padding: calc(10px * var(--s)) calc(22px * var(--s)) calc(10px * var(--s)) calc(20px * var(--s));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
   animation: pop-in 0.5s cubic-bezier(0.2, 1.2, 0.3, 1), pop-out 0.4s ease-in 3.6s forwards;
   cursor: pointer;
 }
+.pop::before { content: ""; position: absolute; left: calc(7px * var(--s)); top: calc(10px * var(--s)); bottom: calc(10px * var(--s)); width: calc(4px * var(--s)); border-radius: 9px; background: #5d6270; }
 @keyframes pop-in { from { transform: translateY(-120%) scale(0.9); opacity: 0; } }
 @keyframes pop-out { to { transform: translateY(-120%); opacity: 0; } }
-.pop-body { display: flex; flex-direction: column; gap: 4px; }
-.pop-title { font-size: calc(12px * var(--s)); font-weight: 600; color: #c9ced8; white-space: nowrap; }
+.pop-body { display: flex; flex-direction: column; gap: calc(5px * var(--s)); }
+.pop-title { font-size: calc(11px * var(--s)); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #e8eaf0; white-space: nowrap; }
+.pop.up .tint-white .ft { color: #7ee2a8; }
+.pop.down .tint-white .ft { color: #ff8a7a; }
 
 .no-shadow .island, .no-shadow .edge, .no-shadow .pop { box-shadow: none; }
 .no-icons .entry-icon { display: none; }

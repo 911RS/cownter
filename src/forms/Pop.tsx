@@ -54,13 +54,13 @@ export function Pop() {
   const d = cur.was !== undefined ? `was ${cur.was.length > 24 ? cur.was.slice(0, 23) + "…" : cur.was}` : formatDelta(cur.diff, cur.view.entry.format);
   return (
     <div className={"widget-root pop-root" + look.className} ref={setRoot} key={cur.key} style={look.style}>
-      <div className="pop" onClick={() => setQueue((q) => q.slice(1))}>
-        <EntryIcon icon={cur.view.entry.icon} size={24 * s} />
+      <div className={"pop" + (cur.was !== undefined ? "" : cur.diff > 0 ? " up" : cur.diff < 0 ? " down" : "")} onClick={() => setQueue((q) => q.slice(1))}>
+        <EntryIcon icon={cur.view.entry.icon} size={34 * s} />
         <div className="pop-body">
           <span className="pop-title">
             <b className={cur.was !== undefined ? "muted" : cur.diff > 0 ? "up" : "down"}>{d}</b> {cur.view.entry.name}
           </span>
-          <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(cur.view)} height={21 * s} />
+          <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(cur.view)} height={26 * s} />
         </div>
       </div>
     </div>

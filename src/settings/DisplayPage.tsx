@@ -709,6 +709,13 @@ function sampleViews(): EntryView[] {
         ] as [number, number],
     ),
     goalProgress: null,
+    goalEta: null,
+    streak: 0,
+  });
+  const stars = mk(-2, "Stars", 1932, 12, {
+    kind: "builtin",
+    value: "star",
+    bg: "#24292f",
   });
   return [
     mk(-1, "Subscribers", 48213, 124, {
@@ -716,11 +723,13 @@ function sampleViews(): EntryView[] {
       value: "play",
       bg: "#e5484d",
     }),
-    mk(-2, "Stars", 1932, 12, {
-      kind: "builtin",
-      value: "star",
-      bg: "#24292f",
-    }),
+    {
+      ...stars,
+      entry: { ...stars.entry, goalValue: 2000 },
+      goalProgress: 0.966,
+      goalEta: now + 9 * 86400e3,
+      streak: 4,
+    },
     mk(-3, "Orders", 87, -3, { kind: "builtin", value: "cart", bg: "#12805c" }),
   ];
 }

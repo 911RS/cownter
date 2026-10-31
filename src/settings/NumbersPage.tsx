@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api, errorText } from "../core/api";
-import { formatDelta, formatValue, intervalLabel, timeAgo } from "../core/format";
+import { formatDelta, formatValue, goalLeft, intervalLabel, timeAgo } from "../core/format";
 import { useNow } from "../core/hooks";
 import type { Entry, EntryView, Group } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
@@ -163,9 +163,16 @@ export function NumbersPage({
             </span>
             <div className="entry-value">
               <b>{formatValue(v.value, v.entry.format)}</b>
-              <span className={(v.deltaToday ?? 0) >= 0 ? "pos" : "neg"}>{formatDelta(v.deltaToday, v.entry.format) || " "}</span>
+              <span className={(v.deltaToday ?? 0) >= 0 ? "pos" : "neg"}>
+                {formatDelta(v.deltaToday, v.entry.format) || " "}
+                {(v.streak ?? 0) >= 2 && (
+                  <em className="streak-mark" title={`Up ${v.streak} days in a row`}>
+                    🔥 {v.streak}
+                  </em>
+                )}
+              </span>
             </div>
-            <div className="goal" title={v.goalProgress !== null ? `Goal ${formatValue(v.entry.goalValue, v.entry.format)}` : undefined}>
+            <div className="goal" title={v.goalProgress !== null ? [`Goal ${formatValue(v.entry.goalValue, v.entry.format)}`, goalLeft(v)].filter(Boolean).join(" · ") : undefined}>
               {v.goalProgress !== null && (
                 <>
                   <div className="goal-bar">

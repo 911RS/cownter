@@ -7,7 +7,7 @@ import { Morph } from "../components/Morph";
 import { Skin } from "../skins/Skin";
 import { ChangeFx } from "./ChangeFx";
 import { formOptClasses } from "./options";
-import { Delta, formLook, formScale, StatusMark, valueText } from "./common";
+import { Delta, formLook, formScale, GoalLeft, StatusMark, Streak, valueText } from "./common";
 
 export function Island() {
   const [cfg] = useDisplay();
@@ -100,6 +100,8 @@ export function Island() {
                     <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v)} height={17 * s} status={v.status} />
                     <span className="chip-label">
                       {v.entry.name} <Delta v={v} />
+                      <Streak v={v} />
+                      <GoalLeft v={v} />
                       <StatusMark status={v.status} error={v.error} />
                     </span>
                   </div>

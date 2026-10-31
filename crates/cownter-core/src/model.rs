@@ -295,6 +295,10 @@ pub struct EntryView {
     pub delta_today: Option<f64>,
     pub spark: Vec<(i64, f64)>,
     pub goal_progress: Option<f64>,
+    /// Expected time the goal is reached at the recent trend, None when not heading toward it.
+    pub goal_eta: Option<i64>,
+    /// Consecutive local days that ended higher than the day before.
+    pub streak: u32,
     pub text: Option<String>,
     pub prev_text: Option<String>,
 }

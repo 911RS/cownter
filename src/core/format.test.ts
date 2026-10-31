@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compact, formatDelta, formatValue, intervalLabel, slugify, timeAgo } from "./format";
+import { compact, etaDate, formatDelta, formatValue, goalLeft, intervalLabel, slugify, timeAgo } from "./format";
 
 describe("compact", () => {
   it("shortens large numbers", () => {
@@ -67,5 +67,28 @@ describe("timeAgo and intervalLabel", () => {
     expect(intervalLabel(30)).toBe("30 s");
     expect(intervalLabel(300)).toBe("5 min");
     expect(intervalLabel(7200)).toBe("2 h");
+  });
+});
+
+describe("goalLeft", () => {
+  const fmt = { style: "full" as const, decimals: null, prefix: "", suffix: "" };
+  const now = Date.UTC(2026, 9, 31, 12);
+  const mk = (value: number | null, goalValue: number | null, goalEta: number | null = null) => ({ value, goalEta, entry: { goalValue, format: fmt } });
+
+  it("shows what is left and the forecast date", () => {
+    expect(goalLeft(mk(847, 1000), now)).toBe("153 to go");
+    expect(goalLeft(mk(847, 1000, Date.UTC(2026, 10, 12, 12)), now)).toBe("153 to go · ~Nov 12");
+    expect(goalLeft(mk(0, 50_000), now)).toBe("50K to go");
+  });
+
+  it("is empty without a goal, a value, or once reached", () => {
+    expect(goalLeft(mk(5, null), now)).toBe("");
+    expect(goalLeft(mk(null, 10), now)).toBe("");
+    expect(goalLeft(mk(10, 10), now)).toBe("");
+    expect(goalLeft({ ...mk(1, 10), entry: { goalValue: 10, format: fmt, textMode: true } }, now)).toBe("");
+  });
+
+  it("adds the year to far dates", () => {
+    expect(etaDate(Date.UTC(2028, 2, 3, 12), now)).toBe("Mar 2028");
   });
 });

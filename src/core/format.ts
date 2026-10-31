@@ -38,6 +38,22 @@ export function formatDelta(d: number | null | undefined, fmt?: Partial<NumberFo
   return (d > 0 ? "+" : "−") + body;
 }
 
+/** Short forecast date such as "Nov 12", with the year when it is not within the next ~11 months. */
+export function etaDate(ts: number, now = Date.now()): string {
+  const d = new Date(ts);
+  const far = ts - now > 330 * 86400e3;
+  return d.toLocaleDateString("en-US", far ? { month: "short", year: "numeric" } : { month: "short", day: "numeric" });
+}
+
+/** "153 to go · ~Nov 12" for a numeric goal not reached yet, "" otherwise. */
+export function goalLeft(v: { value: number | null; goalEta?: number | null; entry: { goalValue: number | null; format: NumberFormat; textMode?: boolean } }, now = Date.now()): string {
+  const g = v.entry.goalValue;
+  if (v.entry.textMode || g === null || v.value === null || v.value >= g) return "";
+  const left = g - v.value;
+  const body = formatValue(left, { ...v.entry.format, style: left >= 10000 ? "compact" : v.entry.format.style });
+  return body + " to go" + (v.goalEta ? " · ~" + etaDate(v.goalEta, now) : "");
+}
+
 export function slugify(name: string): string {
   let s = name
     .toLowerCase()

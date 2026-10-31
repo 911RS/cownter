@@ -1,4 +1,4 @@
-import { formatDelta, formatValue } from "../core/format";
+import { formatDelta, formatValue, goalLeft } from "../core/format";
 import { SIZE_SCALE } from "../core/select";
 import type { EntryView, FormCfg, Status } from "../core/types";
 
@@ -17,6 +17,18 @@ export function Delta({ v }: { v: EntryView }) {
   const t = formatDelta(v.deltaToday, v.entry.format);
   if (!t) return null;
   return <span className={"delta " + ((v.deltaToday ?? 0) > 0 ? "up" : "down")}>{t}</span>;
+}
+
+export function Streak({ v }: { v: EntryView }) {
+  const n = v.streak ?? 0;
+  if (n < 2) return null;
+  return <span className="streak" title={`Up ${n} days in a row`}>🔥 {n}</span>;
+}
+
+export function GoalLeft({ v }: { v: EntryView }) {
+  const t = goalLeft(v);
+  if (!t) return null;
+  return <span className="goal-left" title={`Goal ${formatValue(v.entry.goalValue, v.entry.format)}`}>{t}</span>;
 }
 
 export function StatusMark({ status, error }: { status: Status; error: string | null }) {

@@ -70,6 +70,8 @@ export interface EntryView {
   deltaToday: number | null;
   spark: [number, number][];
   goalProgress: number | null;
+  goalEta?: number | null;
+  streak?: number;
   text?: string | null;
   prevText?: string | null;
 }

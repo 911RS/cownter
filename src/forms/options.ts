@@ -11,7 +11,16 @@ const COMMON: FormOpt[] = [
   { id: "pulse", label: "Animate the number when it changes", def: true },
 ];
 
+const PROGRESS: FormOpt[] = [
+  { id: "streak", label: "Streak marker (days up in a row)", def: true },
+  { id: "goal", label: "Goal countdown and forecast date", def: true },
+];
+
 export const FORM_OPTS: Record<string, FormOpt[]> = {
+  island: PROGRESS,
+  orb: PROGRESS,
+  drawer: PROGRESS,
+  notch: PROGRESS,
   ticker: [
     { id: "motion", label: "Scrolling", def: true },
     { id: "sep", label: "Separators", def: true },

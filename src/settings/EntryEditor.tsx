@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, errorText } from "../core/api";
-import { formatValue, intervalLabel, slugify } from "../core/format";
+import { formatValue, goalLeft, intervalLabel, slugify } from "../core/format";
 import { SOUNDS, playSound } from "../core/sounds";
 import type { Entry, EntryView, Group, Header, Icon, Pick, SourceCfg, SourceType, TestResult } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
@@ -505,6 +505,14 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
                 <NumberInput value={d.goalValue} placeholder="e.g. 10000" onChange={(goalValue) => set({ goalValue })} />
               )}
             </div>
+            {!d.textMode && live && live.value !== null && d.goalValue !== null && live.entry.goalValue === d.goalValue && (
+              <div className="sec-row">
+                <span className="sec-label">Forecast</span>
+                <span className="muted" title="Based on the trend of the last 30 days">
+                  {live.value >= d.goalValue ? "Reached" : goalLeft(live) + (live.goalEta ? "" : " · no date yet, it needs a rising trend")}
+                </span>
+              </div>
+            )}
             <div className="sec-row">
               <span className="sec-label">Confetti on goals and new records</span>
               <Toggle checked={d.celebrate} onChange={(celebrate) => set({ celebrate })} />

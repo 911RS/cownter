@@ -397,6 +397,7 @@ textarea { resize: vertical; font-family: "JetBrains Mono", monospace; font-size
 .goal { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
 .goal-bar { width: 30px; height: 4px; background: var(--line-2); border-radius: 9px; overflow: hidden; }
 .goal-bar i { display: block; height: 100%; background: var(--blue); border-radius: 9px; }
+.streak-mark { font-style: normal; color: #e8862a; margin-left: 5px; }
 .goal small { font-size: 11px; font-weight: 700; color: var(--ink-2); }
 .entry-icon { display: inline-grid; place-items: center; overflow: hidden; flex: none; }
 

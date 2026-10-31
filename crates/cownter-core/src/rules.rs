@@ -4,6 +4,54 @@ use crate::store::{DAY_MS, Result, Store};
 use std::collections::{HashMap, HashSet};
 
 const SPARK_POINTS: usize = 24;
+const FORECAST_DAYS: i64 = 30;
+const FORECAST_POINTS: usize = 120;
+const FORECAST_MIN_SPAN_MS: i64 = DAY_MS / 2;
+const FORECAST_MAX_MS: f64 = 10.0 * 365.0 * DAY_MS as f64;
+const MAX_STREAK_DAYS: u32 = 366;
+
+/// When a linear trend through `points` takes `value` up to `goal`; None if reached, flat, falling or too far out.
+pub fn goal_eta(points: &[(i64, f64)], value: f64, goal: f64, now: i64) -> Option<i64> {
+    if value >= goal || points.len() < 2 {
+        return None;
+    }
+    let t0 = points[0].0;
+    if points[points.len() - 1].0 - t0 < FORECAST_MIN_SPAN_MS {
+        return None;
+    }
+    let n = points.len() as f64;
+    let mx = points.iter().map(|p| (p.0 - t0) as f64).sum::<f64>() / n;
+    let my = points.iter().map(|p| p.1).sum::<f64>() / n;
+    let (mut sxy, mut sxx) = (0.0, 0.0);
+    for (t, v) in points {
+        let dx = (t - t0) as f64 - mx;
+        sxy += dx * (v - my);
+        sxx += dx * dx;
+    }
+    let slope = sxy / sxx;
+    if !slope.is_finite() || slope <= 0.0 {
+        return None;
+    }
+    let ms = (goal - value) / slope;
+    if ms > FORECAST_MAX_MS { None } else { Some(now + ms.ceil() as i64) }
+}
+
+/// Days in a row that closed higher than the day before. `close(0)` is the current value,
+/// `close(k)` the value at the end of the day `k` days ago. A flat today does not break the run.
+pub fn day_streak<E>(mut close: impl FnMut(u32) -> std::result::Result<Option<f64>, E>) -> std::result::Result<u32, E> {
+    let Some(mut cur) = close(0)? else { return Ok(0) };
+    let mut n = 0;
+    for k in 1..=MAX_STREAK_DAYS {
+        let Some(prev) = close(k)? else { break };
+        if cur > prev {
+            n += 1;
+        } else if !(k == 1 && cur == prev) {
+            break;
+        }
+        cur = prev;
+    }
+    Ok(n)
+}
 
 pub fn build_view(store: &Store, entry: Entry, now: i64, day_start: i64) -> Result<EntryView> {
     let id = entry.id;
@@ -26,6 +74,15 @@ pub fn build_view(store: &Store, entry: Entry, now: i64, day_start: i64) -> Resu
         (Some(v), Some(g)) if g > 0.0 => Some((v / g).clamp(0.0, 1.0)),
         _ => None,
     };
+    let goal_eta = match (value, entry.goal_value) {
+        (Some(v), Some(g)) => goal_eta(&store.spark(id, now - FORECAST_DAYS * DAY_MS, now, FORECAST_POINTS)?, v, g, now),
+        _ => None,
+    };
+    let streak = if entry.text_mode {
+        0
+    } else {
+        day_streak(|k| if k == 0 { Ok(value) } else { store.value_at_or_before(id, day_start - (k as i64 - 1) * DAY_MS - 1) })?
+    };
     Ok(EntryView {
         value,
         prev: store.previous_value(id)?,
@@ -35,6 +92,8 @@ pub fn build_view(store: &Store, entry: Entry, now: i64, day_start: i64) -> Resu
         delta_today,
         spark: store.spark(id, now - DAY_MS, now, SPARK_POINTS)?,
         goal_progress,
+        goal_eta,
+        streak,
         text,
         prev_text,
         entry,
@@ -335,6 +394,77 @@ mod tests {
         let evs = live(&s, id, T0 + 20, 53.0);
         let CoreEvent::EntryUpdated { view } = &evs[0] else { panic!() };
         assert_eq!(view.delta_today, Some(3.0));
+    }
+
+    #[test]
+    fn eta_from_linear_trend() {
+        let pts: Vec<(i64, f64)> = (0..10).map(|d| (T0 + d * DAY_MS, 100.0 + 10.0 * d as f64)).collect();
+        let now = T0 + 9 * DAY_MS;
+        assert_eq!(goal_eta(&pts, 190.0, 240.0, now), Some(now + 5 * DAY_MS));
+    }
+
+    #[test]
+    fn eta_none_cases() {
+        let now = T0 + 9 * DAY_MS;
+        let up: Vec<(i64, f64)> = (0..10).map(|d| (T0 + d * DAY_MS, 100.0 + d as f64)).collect();
+        let flat: Vec<(i64, f64)> = (0..10).map(|d| (T0 + d * DAY_MS, 100.0)).collect();
+        let down: Vec<(i64, f64)> = (0..10).map(|d| (T0 + d * DAY_MS, 100.0 - d as f64)).collect();
+        assert_eq!(goal_eta(&[], 100.0, 200.0, now), None);
+        assert_eq!(goal_eta(&up[..1], 100.0, 200.0, now), None);
+        assert_eq!(goal_eta(&[(T0, 1.0), (T0 + 60_000, 2.0)], 2.0, 10.0, now), None);
+        assert_eq!(goal_eta(&flat, 100.0, 200.0, now), None);
+        assert_eq!(goal_eta(&down, 91.0, 200.0, now), None);
+        assert_eq!(goal_eta(&up, 109.0, 100.0, now), None);
+        assert_eq!(goal_eta(&up, 109.0, 109.0, now), None);
+        assert_eq!(goal_eta(&up, 109.0, 1e9, now), None);
+    }
+
+    #[test]
+    fn eta_in_view() {
+        let s = Store::open_memory().unwrap();
+        let mut e = entry("a", url_source());
+        e.goal_value = Some(200.0);
+        let id = s.insert_entry(&e, 0).unwrap();
+        for d in 0..5 {
+            s.insert_reading(&Reading { entry_id: id, ts: T0 - (4 - d) * DAY_MS, value: Some(100.0 + 10.0 * d as f64), status: Status::Live, error: None, text: None }).unwrap();
+        }
+        let v = build_view(&s, s.entry(id).unwrap().unwrap(), T0, T0).unwrap();
+        let eta = v.goal_eta.expect("eta");
+        assert!((eta - (T0 + 6 * DAY_MS)).abs() < DAY_MS / 2, "{eta}");
+        let mut none = s.entry(id).unwrap().unwrap();
+        none.goal_value = None;
+        assert_eq!(build_view(&s, none, T0, T0).unwrap().goal_eta, None);
+    }
+
+    fn streak_of(closes: &[f64]) -> u32 {
+        day_streak::<()>(|k| Ok(closes.get(k as usize).copied())).unwrap()
+    }
+
+    #[test]
+    fn streak_math() {
+        assert_eq!(day_streak::<()>(|_| Ok(None)).unwrap(), 0);
+        assert_eq!(streak_of(&[5.0]), 0);
+        assert_eq!(streak_of(&[5.0, 5.0, 5.0]), 0);
+        assert_eq!(streak_of(&[1.0, 2.0, 3.0, 4.0]), 0);
+        assert_eq!(streak_of(&[4.0, 3.0, 2.0, 1.0]), 3);
+        assert_eq!(streak_of(&[4.0, 3.0, 3.0, 1.0]), 1);
+        assert_eq!(streak_of(&[3.0, 3.0, 2.0, 1.0]), 2);
+        assert_eq!(streak_of(&[2.0, 3.0, 2.0, 1.0]), 0);
+    }
+
+    #[test]
+    fn streak_in_view() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
+        for (d, v) in [(4, 10.0), (3, 8.0), (2, 9.0), (1, 12.0)] {
+            s.insert_reading(&Reading { entry_id: id, ts: T0 - d * DAY_MS + 1000, value: Some(v), status: Status::Live, error: None, text: None }).unwrap();
+        }
+        let e = s.entry(id).unwrap().unwrap();
+        assert_eq!(build_view(&s, e.clone(), T0 + 10, T0).unwrap().streak, 2);
+        live(&s, id, T0 + 1000, 15.0);
+        assert_eq!(build_view(&s, e.clone(), T0 + 2000, T0).unwrap().streak, 3);
+        live(&s, id, T0 + 3000, 11.0);
+        assert_eq!(build_view(&s, e, T0 + 4000, T0).unwrap().streak, 0);
     }
 
     #[test]

@@ -22,6 +22,9 @@ html.widget, html.widget body {
 .delta { font-size: calc(11px * var(--s)); font-weight: 700; white-space: nowrap; }
 .delta.up, .up { color: #7dff9b; }
 .delta.down, .down { color: #ff7a6b; }
+.streak { font-size: calc(10px * var(--s)); font-weight: 700; color: #ffb35c; white-space: nowrap; }
+.goal-left { font-size: calc(10px * var(--s)); font-weight: 600; color: #8a92a0; white-space: nowrap; }
+.fo-off-streak .streak, .fo-off-goal .goal-left { display: none; }
 .smark { font-size: calc(11px * var(--s)); font-weight: 800; }
 .smark.stale { color: #9aa3b2; }
 .smark.err { color: #ff5a5a; }

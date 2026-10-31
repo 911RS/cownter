@@ -11,7 +11,7 @@ import { Spark } from "../components/Spark";
 import { Skin } from "../skins/Skin";
 import { ChangeFx } from "./ChangeFx";
 import { formOpt, formOptClasses } from "./options";
-import { Delta, formLook, formScale, StatusMark, valueText } from "./common";
+import { Delta, formLook, formScale, GoalLeft, StatusMark, Streak, valueText } from "./common";
 
 const PEEK_MS = 4000;
 const FLUSH = ["notch", "wings", "toptabs", "folders", "tag", "clothesline", "deck"];
@@ -100,9 +100,11 @@ function List({ c, h = 14 }: { c: Ctx; h?: number }) {
         <div className={"b-row" + (c.pulse === v.entry.id ? " pulse" : "")} key={v.entry.id} title={v.error ?? v.entry.name}>
           {c.icon(v, 16 * c.s)}
           <Name c={c} v={v} />
+          <GoalLeft v={v} />
           <span className="b-grow" />
           {c.num(v, h * c.s)}
           <Delta v={v} />
+          <Streak v={v} />
         </div>
       ))}
     </div>

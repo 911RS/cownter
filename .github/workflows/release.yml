@@ -19,8 +19,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: |
-          id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq .id 2>/dev/null || true)
-          if [ -z "$id" ]; then
+          if ! id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq .id 2>/dev/null); then
             id=$(gh api -X POST "repos/${{ github.repository }}/releases" -f tag_name="$TAG" -f name="Cownter $TAG" -f body="Download the installer for your system below." --jq .id)
           fi
           echo "id=$id" >> "$GITHUB_OUTPUT"

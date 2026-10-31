@@ -1,6 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(code) = cownter_lib::cli::run(&args) {
+        std::process::exit(code);
+    }
     #[cfg(target_os = "linux")]
     {
         // Widgets need exact placement and always-on-top, which Wayland does not allow for normal windows.

@@ -204,7 +204,7 @@ orders_today / visitors_today * 100
 youtube_subscribers + github_followers
 ```
 
-Formulas recalculate on their own refresh timer, at least every 10 seconds. Cownter rejects loops (a formula that uses itself) and won't let you rename a number that a formula still uses.
+Formulas recalculate on their own refresh timer (10 seconds or longer). Cownter rejects loops (a formula that uses itself) and won't let you rename a number that a formula still uses.
 
 ## Shortcuts and the tray
 

@@ -266,7 +266,8 @@ html.widget, html.widget body {
 .m-stage.armed .m-layer {
   transition: left var(--m-t) var(--m-ease), top var(--m-t) var(--m-ease), transform var(--m-t) var(--m-ease), opacity 0.18s ease-out;
 }
-.m-stage.armed .m-layer.m-open:not(.off) { transition-delay: 0s, 0s, 0s, 0.08s; }
+.m-stage.armed .m-layer:not(.off) { transition-delay: 0s, 0s, 0s, 0.09s; }
+.m-stage.armed .m-layer.off { transition-duration: var(--m-t), var(--m-t), var(--m-t), 0.1s; }
 .m-layer.off { opacity: 0; pointer-events: none; transform: scale(0.94); }
 .island > .m-clip > .m-closed { padding: calc(6px * var(--s)) calc(14px * var(--s)) calc(6px * var(--s)) calc(7px * var(--s)); }
 .island > .m-clip > .m-open { padding: calc(10px * var(--s)) calc(12px * var(--s)); }

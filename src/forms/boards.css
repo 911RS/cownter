@@ -365,3 +365,8 @@
 .edge-left .b-notch, .edge-right .b-notch { --np: calc(12px * var(--s)) calc(8px * var(--s)); }
 .b-notch > .m-clip > .m-layer { padding: var(--np); }
 .m-stage > .b-notch.m-panel { margin: 0; padding: 0; }
+.b-host:has(> .m-stage) { filter: none; }
+.edge-top .m-stage > .b-notch { filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.45)); }
+.edge-bottom .m-stage > .b-notch { filter: drop-shadow(0 -5px 6px rgba(0, 0, 0, 0.45)); }
+.edge-left .m-stage > .b-notch { filter: drop-shadow(5px 0 6px rgba(0, 0, 0, 0.45)); }
+.edge-right .m-stage > .b-notch { filter: drop-shadow(-5px 0 6px rgba(0, 0, 0, 0.45)); }

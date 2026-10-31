@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../core/api";
-import { useDisplay, useEntries, useWidgetSize } from "../core/hooks";
+import { useDisplay, useEntries, useSeason, useWidgetSize } from "../core/hooks";
+import { SEASONS, seasonClass, seasonTint } from "../core/season";
 import { selectEntries } from "../core/select";
 import { EntryIcon } from "../components/EntryIcon";
 import { Morph } from "../components/Morph";
@@ -11,6 +12,7 @@ import { Delta, formLook, formScale, GoalLeft, StatusMark, Streak, valueText } f
 
 export function Island() {
   const [cfg] = useDisplay();
+  const season = useSeason(cfg?.seasonal);
   const [pulse, setPulse] = useState<number | null>(null);
   const listRef = useRef<number[]>([]);
   const views = useEntries((e) => {
@@ -48,6 +50,8 @@ export function Island() {
   if (!cfg || !f) return null;
   const s = formScale(f);
   const look = formLook(f);
+  const tint = seasonTint(season, f.tint);
+  const mark = season && SEASONS[season].mark;
   const cur = n ? list[idx % n] : null;
 
   const onEnter = () => {
@@ -60,7 +64,7 @@ export function Island() {
   };
 
   return (
-    <div className={"widget-root island-root" + look.className + formOptClasses("island", f)} ref={setRoot} style={look.style}>
+    <div className={"widget-root island-root" + look.className + seasonClass(season) + formOptClasses("island", f)} ref={setRoot} style={look.style}>
       <ChangeFx f={f} views={list} />
       <Morph
         live
@@ -75,9 +79,10 @@ export function Island() {
           cur ? (
             <div className="island-row" key={cur.entry.id}>
               <EntryIcon icon={cur.entry.icon} size={18 * s} />
-              <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(cur)} height={19 * s} status={cur.status} />
+              <Skin skin={f.skin} tint={tint} opts={f.skinOpts} text={valueText(cur)} height={19 * s} status={cur.status} />
               <Delta v={cur} />
               <StatusMark status={cur.status} error={cur.error} />
+              {mark && <span className="season-mark">{mark}</span>}
               {n > 1 && f.showDots !== false && (
                 <span className="dots">
                   {list.slice(0, 6).map((v, i) => (
@@ -97,7 +102,7 @@ export function Island() {
                 <div className={"chip" + (pulse === v.entry.id ? " pulse" : "")} key={v.entry.id} title={v.error ?? v.entry.name}>
                   <EntryIcon icon={v.entry.icon} size={20 * s} />
                   <div className="chip-body">
-                    <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v)} height={17 * s} status={v.status} />
+                    <Skin skin={f.skin} tint={tint} opts={f.skinOpts} text={valueText(v)} height={17 * s} status={v.status} />
                     <span className="chip-label">
                       {v.entry.name} <Delta v={v} />
                       <Streak v={v} />

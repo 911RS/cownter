@@ -181,6 +181,8 @@ pub struct DisplayConfig {
     pub push_port: u16,
     /// `soft`, `cash`, `cheer`, `arcade` or `cowbell`.
     pub sound_pack: String,
+    /// Seasonal colours and marks on the widgets around holidays.
+    pub seasonal: bool,
 }
 
 impl Default for DisplayConfig {
@@ -205,6 +207,7 @@ impl Default for DisplayConfig {
             recap_weekday: 0,
             push_port: DEFAULT_PORT,
             sound_pack: "soft".into(),
+            seasonal: false,
         }
     }
 }
@@ -355,6 +358,7 @@ mod tests {
         assert_eq!(c.recap_weekday, 0);
         assert_eq!(c.push_port, DEFAULT_PORT);
         assert_eq!(c.sound_pack, "soft");
+        assert!(!c.seasonal);
         let a: DisplayConfig = serde_json::from_str(r#"{"soundPack":"arcade"}"#).unwrap();
         assert_eq!(a.sanitized().sound_pack, "arcade");
     }

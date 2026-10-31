@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { api } from "../core/api";
-import { useDisplay, useEntries, useWidgetSize } from "../core/hooks";
+import { useDisplay, useEntries, useSeason, useWidgetSize } from "../core/hooks";
+import { seasonClass, seasonTint } from "../core/season";
 import { selectEntries } from "../core/select";
 import { EntryIcon } from "../components/EntryIcon";
 import { Skin } from "../skins/Skin";
@@ -10,6 +11,7 @@ import { Delta, formLook, formScale, StatusMark, valueText } from "./common";
 
 export function EdgeTab() {
   const [cfg] = useDisplay();
+  const season = useSeason(cfg?.seasonal);
   const [pulse, setPulse] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const views = useEntries((e) => {
@@ -27,10 +29,11 @@ export function EdgeTab() {
   if (!cfg || !f) return null;
   const s = formScale(f);
   const look = formLook(f);
+  const tint = seasonTint(season, f.tint);
   const list = selectEntries([...views.values()], f);
 
   return (
-    <div className={"widget-root edge-root side-" + f.side + look.className + formOptClasses("edge", f)} ref={setRoot} style={look.style}>
+    <div className={"widget-root edge-root side-" + f.side + look.className + seasonClass(season) + formOptClasses("edge", f)} ref={setRoot} style={look.style}>
       <ChangeFx f={f} views={list} />
       <div
         className={"edge" + (open ? " open" : "")}
@@ -59,12 +62,12 @@ export function EdgeTab() {
             {open ? (
               <>
                 <span className="edge-name">{v.entry.name}</span>
-                <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v)} height={16 * s} status={v.status} />
+                <Skin skin={f.skin} tint={tint} opts={f.skinOpts} text={valueText(v)} height={16 * s} status={v.status} />
                 <Delta v={v} />
                 <StatusMark status={v.status} error={v.error} />
               </>
             ) : (
-              <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v, true)} height={12 * s} status={v.status} />
+              <Skin skin={f.skin} tint={tint} opts={f.skinOpts} text={valueText(v, true)} height={12 * s} status={v.status} />
             )}
           </div>
         ))}

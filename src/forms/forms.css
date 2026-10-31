@@ -301,3 +301,11 @@ html.widget, html.widget body {
 .recap-change.muted { color: #9aa3b2; }
 .recap-best { font-size: calc(10px * var(--s)); font-weight: 600; color: #8a92a0; white-space: nowrap; }
 .no-shadow .recap { box-shadow: none; }
+
+/* Seasonal touches */
+.season-mark { font-size: calc(11px * var(--s)); line-height: 1; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+.pop-title .season-mark { margin-left: calc(4px * var(--s)); }
+.season-halloween .island { box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 138, 31, 0.35), 0 0 calc(10px * var(--s)) rgba(123, 44, 255, 0.25); }
+.season-christmas .island { box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(238, 248, 255, 0.55), inset 0 0 0 1px rgba(160, 215, 255, 0.25); }
+.season-christmas .season-mark { color: #eef8ff; }
+.season-newyear .island { box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 216, 77, 0.4); }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, onCoreEvent, onDisplayChanged, onReordered } from "./api";
+import { seasonOf, type Season } from "./season";
 import type { CoreEvent, DisplayConfig, EntryView } from "./types";
 
 /** Live list of entries, kept up to date from core events. */
@@ -87,6 +88,12 @@ export function useWidgetSize(el: HTMLElement | null, show: boolean, pad = 0) {
     send();
     return () => ro.disconnect();
   }, [el, show, pad]);
+}
+
+/** Active season when seasonal touches are on, checked every 10 minutes. */
+export function useSeason(on: boolean | undefined): Season | null {
+  const now = useNow(600000);
+  return on ? seasonOf(new Date(now)) : null;
 }
 
 export function useNow(ms: number) {

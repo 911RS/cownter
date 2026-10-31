@@ -46,6 +46,22 @@
 .tint-ruby { --h: 355; --sat: 100%; }
 .tint-violet { --h: 270; --sat: 95%; }
 .tint-classic { --h: 75; --sat: 15%; }
+.tint-pumpkin { --h: 28; --sat: 100%; animation: pumpkin-cycle 5s ease-in-out infinite; }
+@keyframes pumpkin-cycle { 0%, 100% { --h: 28; } 50% { --h: -88; } }
+.tint-frost { --h: 200; --sat: 55%; }
+.tint-gold { --h: 44; --sat: 100%; animation: gold-cycle 3s ease-in-out infinite; }
+@keyframes gold-cycle { 0%, 100% { --h: 36; } 50% { --h: 52; } }
+.tint-pumpkin .ft, .tint-gold .ft {
+  background: linear-gradient(90deg, #ff8a1f, #ffb347, #a35cff, #7b2cff, #ff8a1f) 0 50% / 200% 100% repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  -webkit-text-stroke-color: transparent;
+  animation: chroma-wave 4s linear infinite;
+}
+.tint-gold .ft { background-image: linear-gradient(90deg, #b8860b, #ffd84d, #fff4c2, #ffd84d, #b8860b); animation-duration: 2.4s; }
+.tint-pumpkin .ft .ft-sym, .tint-gold .ft .ft-sym { color: transparent; }
+.tint-frost .ft { color: #eef8ff; text-shadow: 0 0 0.3em hsl(200 100% 80% / 0.55); }
 
 /* Dot-matrix LED panel */
 .dm-panel {

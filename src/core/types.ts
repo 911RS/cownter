@@ -155,7 +155,7 @@ export type SkinName =
   | "dotMatrix"
   | "calculator"
   | "neon";
-export type Tint = "white" | "chroma" | "amber" | "phosphor" | "ice" | "ruby" | "violet" | "classic";
+export type Tint = "white" | "chroma" | "amber" | "phosphor" | "ice" | "ruby" | "violet" | "classic" | "pumpkin" | "frost" | "gold";
 export type Size = "xs" | "s" | "m" | "l" | "xl";
 
 export interface FormCfg {
@@ -213,6 +213,7 @@ export interface DisplayConfig {
   recapWeekday: number;
   pushPort: number;
   soundPack: string;
+  seasonal: boolean;
 }
 
 export interface PushInfo {

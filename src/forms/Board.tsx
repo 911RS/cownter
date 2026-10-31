@@ -2,7 +2,8 @@ import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../core/api";
 import { formatDelta, timeAgo } from "../core/format";
-import { useDisplay, useEntries, useNow, useWidgetSize } from "../core/hooks";
+import { useDisplay, useEntries, useNow, useSeason, useWidgetSize } from "../core/hooks";
+import { seasonClass, seasonTint } from "../core/season";
 import { selectEntries } from "../core/select";
 import type { EntryView, FormCfg } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
@@ -530,6 +531,7 @@ function Cow({ stage = 3 }: { stage?: number }) {
 /** Generic widget window for every form that is not island, edge or pop. */
 export function Board({ id }: { id: string }) {
   const [cfg] = useDisplay();
+  const season = useSeason(cfg?.seasonal);
   const [pulse, setPulse] = useState<number | null>(null);
   const [feed, setFeed] = useState<Change[]>([]);
   const seq = useRef(0);
@@ -613,14 +615,14 @@ export function Board({ id }: { id: string }) {
     now,
     trip: Math.round((window.innerWidth + 320 * s) / 70),
     petUp,
-    num: (v, h, compact) => <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v, compact)} height={h * 1.15} status={v.status} />,
+    num: (v, h, compact) => <Skin skin={f.skin} tint={seasonTint(season, f.tint)} opts={f.skinOpts} text={valueText(v, compact)} height={h * 1.15} status={v.status} />,
     icon: (v, size) => (f.showIcons ? <EntryIcon icon={v.entry.icon} size={size} /> : null),
   };
   const layout = LAYOUTS[id];
   const empty = n === 0 && id !== "feed";
 
   return (
-    <div className={`widget-root board-root form-${id}` + edgeOf(id, f) + look.className + formOptClasses(id, f) + (id === "train" && formOpt(id, f, "travel") ? " travel" : "") + (id === "drawer" ? " dock-" + f.side : "")} ref={setRoot} style={look.style}>
+    <div className={`widget-root board-root form-${id}` + edgeOf(id, f) + look.className + seasonClass(season) + formOptClasses(id, f) + (id === "train" && formOpt(id, f, "travel") ? " travel" : "") + (id === "drawer" ? " dock-" + f.side : "")} ref={setRoot} style={look.style}>
       <ChangeFx f={f} views={list} />
       <div
         className="b-host"

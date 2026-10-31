@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../core/api";
 import { formatDelta } from "../core/format";
-import { useDisplay, useEntries, useWidgetSize } from "../core/hooks";
+import { useDisplay, useEntries, useSeason, useWidgetSize } from "../core/hooks";
+import { SEASONS, seasonClass, seasonTint } from "../core/season";
 import { selectEntries } from "../core/select";
 import type { EntryView } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
@@ -19,6 +20,7 @@ interface Item {
 
 export function Pop() {
   const [cfg] = useDisplay();
+  const season = useSeason(cfg?.seasonal);
   const cfgRef = useRef(cfg);
   cfgRef.current = cfg;
   const [queue, setQueue] = useState<Item[]>([]);
@@ -51,16 +53,18 @@ export function Pop() {
   const f = cfg.pop;
   const s = formScale(f);
   const look = formLook(f);
+  const mark = season && SEASONS[season].mark;
   const d = cur.was !== undefined ? `was ${cur.was.length > 24 ? cur.was.slice(0, 23) + "…" : cur.was}` : formatDelta(cur.diff, cur.view.entry.format);
   return (
-    <div className={"widget-root pop-root" + look.className} ref={setRoot} key={cur.key} style={look.style}>
+    <div className={"widget-root pop-root" + look.className + seasonClass(season)} ref={setRoot} key={cur.key} style={look.style}>
       <div className={"pop" + (cur.was !== undefined ? "" : cur.diff > 0 ? " up" : cur.diff < 0 ? " down" : "")} onClick={() => setQueue((q) => q.slice(1))}>
         <EntryIcon icon={cur.view.entry.icon} size={34 * s} />
         <div className="pop-body">
           <span className="pop-title">
             <b className={cur.was !== undefined ? "muted" : cur.diff > 0 ? "up" : "down"}>{d}</b> {cur.view.entry.name}
+            {mark && <span className="season-mark">{mark}</span>}
           </span>
-          <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(cur.view)} height={26 * s} />
+          <Skin skin={f.skin} tint={seasonTint(season, f.tint)} opts={f.skinOpts} text={valueText(cur.view)} height={26 * s} />
         </div>
       </div>
     </div>

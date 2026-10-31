@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "../core/api";
+import { SEASONS, seasonOf } from "../core/season";
 import { selectEntries } from "../core/select";
 import type {
   DisplayConfig,
@@ -1129,8 +1130,20 @@ export function DisplayPage({
           );
         })}
       </Section>
+
+      <Section title="Seasons">
+        <Row label="Seasonal touches" hint={seasonHint()}>
+          <Toggle checked={cfg.seasonal} onChange={(seasonal) => onChange({ ...cfg, seasonal })} />
+        </Row>
+      </Section>
     </div>
   );
+}
+
+function seasonHint(): string {
+  const now = seasonOf(new Date());
+  const base = "Pumpkin colours and a 🎃 around Halloween, frost and ❄ before Christmas, gold for New Year. Replaces the colour while it lasts.";
+  return now ? `${base} ${SEASONS[now].label} is on now.` : base;
 }
 
 const LOOK_GROUPS: ("All" | SkinGroup)[] = [

@@ -146,6 +146,14 @@ impl Fetcher {
         }
     }
 
+    /// Fetches a text value; only the Any URL source can do this.
+    pub async fn fetch_text(&self, cfg: &SourceCfg) -> Result<String, FetchError> {
+        match cfg {
+            SourceCfg::CustomUrl { .. } => custom_url::fetch_text(self, cfg).await,
+            _ => Err(FetchError::Config("text values only work with the Any URL source".into())),
+        }
+    }
+
     pub async fn test_url(&self, cfg: &SourceCfg) -> Result<TestResult, FetchError> {
         custom_url::test(self, cfg).await
     }

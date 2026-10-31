@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-simulate-change"
+description = "Enables the simulate_change command without any pre-configured scope."
+commands.allow = ["simulate_change"]
+
+[[permission]]
+identifier = "deny-simulate-change"
+description = "Denies the simulate_change command without any pre-configured scope."
+commands.deny = ["simulate_change"]

@@ -1,0 +1,29 @@
+{
+  "name": "Cownter",
+  "logo": "../branding/cownter-logo.png",
+  "symbol": "../branding/cownter-symbol.png",
+  "app": {
+    "png": "icon.png",
+    "windows": "icon.ico",
+    "macos": "icon.icns"
+  },
+  "png_sizes": [
+    16,
+    20,
+    24,
+    32,
+    40,
+    48,
+    64,
+    128,
+    256,
+    512,
+    1024
+  ],
+  "tray": {
+    "dark": "tray-dark-32.png",
+    "light": "tray-light-32.png",
+    "macos_template_1x": "tray-dark-22.png",
+    "macos_template_2x": "tray-dark-44.png"
+  }
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-display"
+description = "Enables the save_display command without any pre-configured scope."
+commands.allow = ["save_display"]
+
+[[permission]]
+identifier = "deny-save-display"
+description = "Denies the save_display command without any pre-configured scope."
+commands.deny = ["save_display"]

@@ -23,6 +23,8 @@ fn entry(slug: &str, url: String) -> Entry {
         celebrate: true,
         sounds: Sounds::default(),
         sort: 0,
+        text_mode: false,
+        goal_text: None,
     }
 }
 
@@ -148,4 +150,31 @@ async fn simulate_writes_and_emits_change() {
     }
     assert!(changed);
     assert!(s.simulate(9999, 1.0).is_err());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn reload_works_from_a_thread_without_runtime() {
+    let server = MockServer::start().await;
+    Mock::given(wiremock::matchers::any()).respond_with(ResponseTemplate::new(200).set_body_string("7")).mount(&server).await;
+    let (store, fetcher, tx, mut rx) = setup();
+    let s = Scheduler::start_with(store.clone(), fetcher, tx, fast());
+    let id = store.insert_entry(&entry("late", server.uri()), 0).unwrap();
+    let s2 = s.clone();
+    std::thread::spawn(move || {
+        s2.reload(id);
+        s2.refresh_all();
+    })
+    .join()
+    .unwrap();
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            if let Some(CoreEvent::EntryUpdated { view }) = rx.recv().await {
+                if view.entry.id == id && view.value == Some(7.0) {
+                    return;
+                }
+            }
+        }
+    })
+    .await
+    .unwrap();
 }

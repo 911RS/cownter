@@ -220,9 +220,61 @@ pub fn extract(body: &str, pick: &Pick) -> Result<f64, String> {
     }
 }
 
+const MAX_TEXT: usize = 200;
+
+fn clip_text(t: &str) -> Option<String> {
+    let t = t.split_whitespace().collect::<Vec<_>>().join(" ");
+    if t.is_empty() {
+        return None;
+    }
+    Some(t.chars().take(MAX_TEXT).collect())
+}
+
+/// Picks a short text from a response: a JSON value, a regex group, or the first non-empty line.
+pub fn extract_text(body: &str, pick: &Pick) -> Result<String, String> {
+    let found = match pick {
+        Pick::JsonPath(path) => {
+            let v: Value = serde_json::from_str(body).map_err(|_| "response is not JSON".to_string())?;
+            let found = pick_path(&v, path).ok_or_else(|| format!("`{path}` not found in response"))?;
+            match found {
+                Value::String(s) => s.clone(),
+                Value::Null => return Err(format!("`{path}` is empty")),
+                Value::Bool(_) | Value::Number(_) => found.to_string(),
+                other => other.to_string(),
+            }
+        }
+        Pick::FirstNumber => body.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("").to_string(),
+        Pick::Regex(pattern) => {
+            let re = regex::Regex::new(pattern).map_err(|e| format!("invalid pattern: {e}"))?;
+            let caps = re.captures(body).ok_or_else(|| "pattern did not match the response".to_string())?;
+            caps.get(1).or_else(|| caps.get(0)).unwrap().as_str().to_string()
+        }
+    };
+    clip_text(&found).ok_or_else(|| "the picked text is empty".to_string())
+}
+
+/// Same text comparison the goal uses: trimmed and case-insensitive.
+pub fn same_text(a: &str, b: &str) -> bool {
+    a.trim().to_lowercase() == b.trim().to_lowercase()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn extracts_text() {
+        let body = r#"{"status":"  Shipped\n today ","n":3,"ok":true,"none":null}"#;
+        assert_eq!(extract_text(body, &Pick::JsonPath("status".into())).unwrap(), "Shipped today");
+        assert_eq!(extract_text(body, &Pick::JsonPath("n".into())).unwrap(), "3");
+        assert_eq!(extract_text(body, &Pick::JsonPath("ok".into())).unwrap(), "true");
+        assert!(extract_text(body, &Pick::JsonPath("none".into())).is_err());
+        assert_eq!(extract_text("\n\n  hello world \nsecond", &Pick::FirstNumber).unwrap(), "hello world");
+        assert_eq!(extract_text("state: OPEN;", &Pick::Regex("state: (\\w+)".into())).unwrap(), "OPEN");
+        assert_eq!(extract_text(&"x".repeat(500), &Pick::FirstNumber).unwrap().len(), 200);
+        assert!(extract_text("   ", &Pick::FirstNumber).is_err());
+        assert!(same_text(" Shipped ", "shipped"));
+    }
 
     #[test]
     fn parses_formats() {

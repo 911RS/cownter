@@ -21,6 +21,7 @@ pub fn build_view(store: &Store, entry: Entry, now: i64, day_start: i64) -> Resu
             .map(|base| v - base),
         None => None,
     };
+    let (text, prev_text) = if entry.text_mode { store.last_texts(id)? } else { (None, None) };
     let goal_progress = match (value, entry.goal_value) {
         (Some(v), Some(g)) if g > 0.0 => Some((v / g).clamp(0.0, 1.0)),
         _ => None,
@@ -34,6 +35,8 @@ pub fn build_view(store: &Store, entry: Entry, now: i64, day_start: i64) -> Resu
         delta_today,
         spark: store.spark(id, now - DAY_MS, now, SPARK_POINTS)?,
         goal_progress,
+        text,
+        prev_text,
         entry,
     })
 }
@@ -65,6 +68,10 @@ fn value_events(store: &Store, entry: &Entry, value: f64, prev: Option<f64>, ts:
                         entry_id: id,
                         alert_id: a.id,
                         message: format!("{} is {} {} ({})", entry.name, word, fmt_num(a.threshold), fmt_num(value)),
+                        value,
+                        diff: prev.map(|p| value - p),
+                        notify: a.notify,
+                        effect: a.effect.clone(),
                     });
                 } else if !hit && !armed {
                     store.set_alert_state(a.id, true, None)?;
@@ -83,9 +90,31 @@ fn value_events(store: &Store, entry: &Entry, value: f64, prev: Option<f64>, ts:
                                 entry_id: id,
                                 alert_id: a.id,
                                 message: format!("{} changed {sign}{pct:.1}% ({})", entry.name, fmt_num(value)),
+                                value,
+                                diff: Some(value - old),
+                                notify: a.notify,
+                                effect: a.effect.clone(),
                             });
                         }
                     }
+                }
+            }
+            AlertKind::RiseBy | AlertKind::DropBy => {
+                let Some(p) = prev else { continue };
+                let diff = value - p;
+                let up = a.kind == AlertKind::RiseBy;
+                if (up && diff >= a.threshold) || (!up && -diff >= a.threshold) {
+                    store.set_alert_state(a.id, true, Some(ts))?;
+                    let sign = if diff > 0.0 { "+" } else { "" };
+                    out.push(CoreEvent::AlertFired {
+                        entry_id: id,
+                        alert_id: a.id,
+                        message: format!("{} changed by {sign}{} ({})", entry.name, fmt_num(diff), fmt_num(value)),
+                        value,
+                        diff: Some(diff),
+                        notify: a.notify,
+                        effect: a.effect.clone(),
+                    });
                 }
             }
         }
@@ -93,7 +122,7 @@ fn value_events(store: &Store, entry: &Entry, value: f64, prev: Option<f64>, ts:
     if let Some(goal) = entry.goal_value {
         if value >= goal && store.mark(id, "goal")?.is_none() {
             store.set_mark(id, "goal", ts)?;
-            out.push(CoreEvent::GoalReached { entry_id: id, value });
+            out.push(CoreEvent::GoalReached { entry_id: id, value, text: None });
         }
     }
     if let Some(max) = store.max_value_before(id, ts)? {
@@ -106,8 +135,33 @@ fn value_events(store: &Store, entry: &Entry, value: f64, prev: Option<f64>, ts:
     Ok(out)
 }
 
+/// Change and goal events for a fresh text reading.
+fn text_events(store: &Store, entry: &Entry, text: &str, ts: i64) -> Result<Vec<CoreEvent>> {
+    let mut out = Vec::new();
+    let id = entry.id;
+    if let (_, Some(prev)) = store.last_texts(id)? {
+        if prev != text {
+            out.push(CoreEvent::TextChanged { entry_id: id, text: text.to_string(), prev });
+        }
+    }
+    if let Some(goal) = &entry.goal_text {
+        let hit = crate::parse::same_text(text, goal);
+        let marked = store.mark(id, "goal")?.is_some();
+        if hit && !marked {
+            store.set_mark(id, "goal", ts)?;
+            out.push(CoreEvent::GoalReached { entry_id: id, value: 0.0, text: Some(text.to_string()) });
+        } else if !hit && marked {
+            store.clear_mark(id, "goal")?;
+        }
+    }
+    Ok(out)
+}
+
 fn input_for(store: &Store, slug: &str) -> Result<Option<Input>> {
     let Some(e) = store.entry_by_slug(slug)? else { return Ok(None) };
+    if e.text_mode {
+        return Ok(Some(Input::Error));
+    }
     let latest = store.latest(e.id)?;
     Ok(Some(match latest {
         Some(Reading { status: Status::Live, value: Some(v), .. }) => Input::Value(v),
@@ -186,7 +240,7 @@ pub fn recompute_formula(store: &Store, entry: &Entry, now: i64, day_start: i64)
             }
         }
     };
-    store.insert_reading(&Reading { entry_id: entry.id, ts: now, value, status, error })?;
+    store.insert_reading(&Reading { entry_id: entry.id, ts: now, value, status, error, text: None })?;
     let mut out = match value {
         Some(v) => value_events(store, entry, v, prev, now)?,
         None => vec![],
@@ -202,6 +256,9 @@ pub fn after_reading(store: &Store, entry_id: i64, now: i64, day_start: i64) -> 
     if let Some(r) = store.latest(entry_id)? {
         if let (Status::Live, Some(v)) = (r.status, r.value) {
             out.extend(value_events(store, &entry, v, store.previous_value(entry_id)?, r.ts)?);
+        }
+        if let (Status::Live, Some(t)) = (r.status, &r.text) {
+            out.extend(text_events(store, &entry, t, r.ts)?);
         }
     }
     out.insert(0, CoreEvent::EntryUpdated { view: build_view(store, entry.clone(), now, day_start)? });
@@ -220,6 +277,9 @@ pub fn validate_formula(store: &Store, slug: &str, expr: &str) -> std::result::R
     for r in &refs {
         if r != slug && !known.contains(r.as_str()) {
             return Err(format!("unknown entry `{r}`"));
+        }
+        if entries.iter().any(|e| &e.slug == r && e.text_mode) {
+            return Err(format!("`{r}` shows text, so it cannot be used in a formula"));
         }
     }
     let mut graph: HashMap<String, Vec<String>> = entries
@@ -247,7 +307,7 @@ mod tests {
     const T0: i64 = 1_800_000_000_000;
 
     fn live(s: &Store, id: i64, ts: i64, v: f64) -> Vec<CoreEvent> {
-        s.insert_reading(&Reading { entry_id: id, ts, value: Some(v), status: Status::Live, error: None }).unwrap();
+        s.insert_reading(&Reading { entry_id: id, ts, value: Some(v), status: Status::Live, error: None, text: None }).unwrap();
         after_reading(s, id, ts, T0).unwrap()
     }
 
@@ -281,7 +341,7 @@ mod tests {
     fn above_fires_once_on_crossing() {
         let s = Store::open_memory().unwrap();
         let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
-        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::Above, threshold: 50.0, window_s: 60, enabled: true, last_fired_at: None }).unwrap();
+        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::Above, threshold: 50.0, window_s: 60, enabled: true, last_fired_at: None, notify: true, effect: String::new() }).unwrap();
         let mut n = 0;
         for (i, v) in [40.0, 55.0, 60.0].iter().enumerate() {
             n += count(&live(&s, id, T0 + i as i64 * 1000, *v), |e| matches!(e, CoreEvent::AlertFired { .. }));
@@ -295,7 +355,7 @@ mod tests {
     fn disabled_alert_never_fires() {
         let s = Store::open_memory().unwrap();
         let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
-        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::Below, threshold: 5.0, window_s: 60, enabled: false, last_fired_at: None }).unwrap();
+        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::Below, threshold: 5.0, window_s: 60, enabled: false, last_fired_at: None, notify: true, effect: String::new() }).unwrap();
         assert_eq!(count(&live(&s, id, T0, 1.0), |e| matches!(e, CoreEvent::AlertFired { .. })), 0);
     }
 
@@ -303,7 +363,7 @@ mod tests {
     fn change_pct_window() {
         let s = Store::open_memory().unwrap();
         let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
-        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::ChangePct, threshold: 10.0, window_s: 3600, enabled: true, last_fired_at: None }).unwrap();
+        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::ChangePct, threshold: 10.0, window_s: 3600, enabled: true, last_fired_at: None, notify: true, effect: String::new() }).unwrap();
         live(&s, id, T0, 100.0);
         let evs = live(&s, id, T0 + 3_600_000, 89.0);
         assert_eq!(count(&evs, |e| matches!(e, CoreEvent::AlertFired { message, .. } if message.contains("-11.0%"))), 1);
@@ -349,11 +409,11 @@ mod tests {
         assert_eq!(v.status, Status::Live);
         assert!((v.value.unwrap() - 79.459).abs() < 0.01);
 
-        s.insert_reading(&Reading { entry_id: ord, ts: T0 + 2, value: None, status: Status::Error, error: Some("x".into()) }).unwrap();
+        s.insert_reading(&Reading { entry_id: ord, ts: T0 + 2, value: None, status: Status::Error, error: Some("x".into()), text: None }).unwrap();
         after_reading(&s, ord, T0 + 2, T0).unwrap();
         assert_eq!(s.latest(avg).unwrap().unwrap().status, Status::Error);
 
-        s.insert_reading(&Reading { entry_id: ord, ts: T0 + 3, value: None, status: Status::Stale, error: None }).unwrap();
+        s.insert_reading(&Reading { entry_id: ord, ts: T0 + 3, value: None, status: Status::Stale, error: None, text: None }).unwrap();
         after_reading(&s, ord, T0 + 3, T0).unwrap();
         let r = s.latest(avg).unwrap().unwrap();
         assert_eq!((r.status, r.value), (Status::Stale, None));
@@ -379,5 +439,71 @@ mod tests {
         assert!(validate_formula(&s, "c", "b + 1").unwrap_err().starts_with("formula loops back"));
         assert!(validate_formula(&s, "c", "c + 1").is_err());
         assert!(validate_formula(&s, "c", "a +").is_err());
+    }
+
+    #[test]
+    fn step_alerts_fire_on_each_big_enough_change() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("steps", url_source()), T0).unwrap();
+        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::RiseBy, threshold: 1.0, window_s: 60, enabled: true, last_fired_at: None, notify: false, effect: "pop".into() }).unwrap();
+        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::DropBy, threshold: 2.0, window_s: 60, enabled: true, last_fired_at: None, notify: true, effect: String::new() }).unwrap();
+        live(&s, id, T0, 10.0);
+        let evs = live(&s, id, T0 + 1000, 11.0);
+        assert_eq!(count(&evs, |e| matches!(e, CoreEvent::AlertFired { diff: Some(d), notify: false, effect, .. } if *d == 1.0 && effect == "pop")), 1);
+        assert_eq!(count(&live(&s, id, T0 + 2000, 12.0), |e| matches!(e, CoreEvent::AlertFired { .. })), 1);
+        assert_eq!(count(&live(&s, id, T0 + 3000, 11.0), |e| matches!(e, CoreEvent::AlertFired { .. })), 0);
+        assert_eq!(count(&live(&s, id, T0 + 4000, 8.0), |e| matches!(e, CoreEvent::AlertFired { notify: true, .. })), 1);
+    }
+
+    #[test]
+    fn rejects_bad_step_alerts() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("bad", url_source()), T0).unwrap();
+        let a = Alert { id: 0, entry_id: id, kind: AlertKind::RiseBy, threshold: 0.0, window_s: 60, enabled: true, last_fired_at: None, notify: true, effect: String::new() };
+        assert!(s.upsert_alert(&a).is_err());
+        assert!(s.upsert_alert(&Alert { threshold: 1.0, effect: "boom".into(), ..a }).is_err());
+    }
+
+    fn text_reading(s: &Store, id: i64, ts: i64, t: &str) -> Vec<CoreEvent> {
+        s.insert_reading(&Reading { entry_id: id, ts, value: None, status: Status::Live, error: None, text: Some(t.into()) }).unwrap();
+        after_reading(s, id, ts, T0).unwrap()
+    }
+
+    #[test]
+    fn text_entries_report_changes_and_goal() {
+        let s = Store::open_memory().unwrap();
+        let mut e = entry("order", url_source());
+        e.text_mode = true;
+        e.goal_text = Some("Delivered".into());
+        let id = s.insert_entry(&e, 0).unwrap();
+        let evs = text_reading(&s, id, T0, "Packed");
+        let CoreEvent::EntryUpdated { view } = &evs[0] else { panic!() };
+        assert_eq!(view.text.as_deref(), Some("Packed"));
+        assert_eq!(count(&evs, |e| matches!(e, CoreEvent::TextChanged { .. })), 0);
+        assert_eq!(count(&text_reading(&s, id, T0 + 1, "Packed"), |e| matches!(e, CoreEvent::TextChanged { .. })), 0);
+        let evs = text_reading(&s, id, T0 + 2, "Shipped");
+        assert_eq!(count(&evs, |e| matches!(e, CoreEvent::TextChanged { prev, text, .. } if prev == "Packed" && text == "Shipped")), 1);
+        let evs = text_reading(&s, id, T0 + 3, " delivered ");
+        assert_eq!(count(&evs, |e| matches!(e, CoreEvent::GoalReached { text: Some(_), .. })), 1);
+        assert_eq!(count(&text_reading(&s, id, T0 + 4, "delivered"), |e| matches!(e, CoreEvent::GoalReached { .. })), 0);
+        text_reading(&s, id, T0 + 5, "Returned");
+        assert_eq!(count(&text_reading(&s, id, T0 + 6, "Delivered"), |e| matches!(e, CoreEvent::GoalReached { .. })), 1);
+    }
+
+    #[test]
+    fn formulas_cannot_use_text_entries() {
+        let s = Store::open_memory().unwrap();
+        let mut e = entry("status", url_source());
+        e.text_mode = true;
+        s.insert_entry(&e, 0).unwrap();
+        assert!(validate_formula(&s, "f", "status + 1").unwrap_err().contains("text"));
+    }
+
+    #[test]
+    fn text_mode_needs_a_url_source() {
+        let s = Store::open_memory().unwrap();
+        let mut e = entry("calc", SourceCfg::Formula { expr: "1".into() });
+        e.text_mode = true;
+        assert!(s.insert_entry(&e, 0).is_err());
     }
 }

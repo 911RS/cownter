@@ -198,6 +198,12 @@ pub struct Entry {
     #[serde(default)]
     pub sounds: Sounds,
     pub sort: i64,
+    /// Shows the fetched text instead of a number.
+    #[serde(default)]
+    pub text_mode: bool,
+    /// Text entries: the goal is reached when the text becomes this value.
+    #[serde(default)]
+    pub goal_text: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -206,6 +212,8 @@ pub enum AlertKind {
     Above,
     Below,
     ChangePct,
+    RiseBy,
+    DropBy,
 }
 
 impl AlertKind {
@@ -214,6 +222,8 @@ impl AlertKind {
             AlertKind::Above => "above",
             AlertKind::Below => "below",
             AlertKind::ChangePct => "changePct",
+            AlertKind::RiseBy => "riseBy",
+            AlertKind::DropBy => "dropBy",
         }
     }
 
@@ -222,6 +232,8 @@ impl AlertKind {
             "above" => Some(AlertKind::Above),
             "below" => Some(AlertKind::Below),
             "changePct" => Some(AlertKind::ChangePct),
+            "riseBy" => Some(AlertKind::RiseBy),
+            "dropBy" => Some(AlertKind::DropBy),
             _ => None,
         }
     }
@@ -237,7 +249,19 @@ pub struct Alert {
     pub window_s: u32,
     pub enabled: bool,
     pub last_fired_at: Option<i64>,
+    /// Show a desktop notification when it fires.
+    #[serde(default = "yes")]
+    pub notify: bool,
+    /// Effect shown on the widgets when it fires: empty, `float`, `pop` or `burst`.
+    #[serde(default)]
+    pub effect: String,
 }
+
+fn yes() -> bool {
+    true
+}
+
+pub const ALERT_EFFECTS: [&str; 4] = ["", "float", "pop", "burst"];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -255,6 +279,8 @@ pub struct Reading {
     pub value: Option<f64>,
     pub status: Status,
     pub error: Option<String>,
+    #[serde(default)]
+    pub text: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -269,6 +295,8 @@ pub struct EntryView {
     pub delta_today: Option<f64>,
     pub spark: Vec<(i64, f64)>,
     pub goal_progress: Option<f64>,
+    pub text: Option<String>,
+    pub prev_text: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -277,8 +305,9 @@ pub enum CoreEvent {
     EntryUpdated { view: EntryView },
     EntryRemoved { entry_id: i64 },
     ValueChanged { entry_id: i64, value: f64, prev: f64 },
-    AlertFired { entry_id: i64, alert_id: i64, message: String },
-    GoalReached { entry_id: i64, value: f64 },
+    AlertFired { entry_id: i64, alert_id: i64, message: String, value: f64, diff: Option<f64>, notify: bool, effect: String },
+    TextChanged { entry_id: i64, text: String, prev: String },
+    GoalReached { entry_id: i64, value: f64, text: Option<String> },
     AllTimeHigh { entry_id: i64, value: f64 },
     AuthFailed { entry_id: i64, message: String },
 }

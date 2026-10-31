@@ -1,6 +1,6 @@
 use super::{FetchError, Fetcher};
 use crate::model::{Pick, SecretOrText, SourceCfg};
-use crate::parse::extract;
+use crate::parse::{extract, extract_text};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -16,6 +16,9 @@ pub struct TestResult {
     pub truncated: bool,
     pub value: Option<f64>,
     pub error: Option<String>,
+    /// The text the pick finds, for entries that show text.
+    #[serde(default)]
+    pub text: Option<String>,
 }
 
 fn build(f: &Fetcher, cfg: &SourceCfg) -> Result<(reqwest::RequestBuilder, Pick), FetchError> {
@@ -39,7 +42,10 @@ fn build(f: &Fetcher, cfg: &SourceCfg) -> Result<(reqwest::RequestBuilder, Pick)
         }
         let value = match &h.value {
             SecretOrText::Text(t) => t.clone(),
-            SecretOrText::Secret(n) => f.secret(n)?,
+            SecretOrText::Secret(n) => f.secret(n).map_err(|e| match e {
+                FetchError::Secret(msg) => FetchError::Secret(format!("header `{name}`: {msg}")),
+                other => other,
+            })?,
         };
         let hn = reqwest::header::HeaderName::from_bytes(name.as_bytes())
             .map_err(|_| FetchError::Config(format!("header name `{name}` is not valid")))?;
@@ -61,12 +67,20 @@ pub(super) async fn fetch(f: &Fetcher, cfg: &SourceCfg) -> Result<f64, FetchErro
     extract(&body.text, &pick).map_err(FetchError::Parse)
 }
 
+pub(super) async fn fetch_text(f: &Fetcher, cfg: &SourceCfg) -> Result<String, FetchError> {
+    let (req, pick) = build(f, cfg)?;
+    let body = f.send(req).await?;
+    extract_text(&body.text, &pick).map_err(FetchError::Parse)
+}
+
 pub(super) async fn test(f: &Fetcher, cfg: &SourceCfg) -> Result<TestResult, FetchError> {
     let (req, pick) = build(f, cfg)?;
     let started = Instant::now();
     let (body, _) = f.send_raw(req).await?;
     let elapsed_ms = started.elapsed().as_millis() as u64;
-    let (value, error) = if (200..300).contains(&body.status) {
+    let ok = (200..300).contains(&body.status);
+    let text = if ok { extract_text(&body.text, &pick).ok() } else { None };
+    let (value, error) = if ok {
         match extract(&body.text, &pick) {
             Ok(v) => (Some(v), None),
             Err(e) => (None, Some(e)),
@@ -91,5 +105,6 @@ pub(super) async fn test(f: &Fetcher, cfg: &SourceCfg) -> Result<TestResult, Fet
         truncated,
         value,
         error,
+        text,
     })
 }

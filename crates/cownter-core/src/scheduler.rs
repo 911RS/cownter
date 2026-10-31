@@ -25,6 +25,7 @@ struct Inner {
     fetcher: Arc<Fetcher>,
     tx: UnboundedSender<CoreEvent>,
     tasks: Mutex<HashMap<i64, JoinHandle<()>>>,
+    rt: tokio::runtime::Handle,
     permits: Arc<Semaphore>,
     opts: SchedulerOptions,
 }
@@ -54,9 +55,15 @@ pub fn day_start_ms() -> i64 {
     Local.from_local_datetime(&naive).earliest().map(|d| d.timestamp_millis()).unwrap_or(now.timestamp_millis())
 }
 
-fn reading_for(entry_id: i64, ts: i64, res: &Result<f64, FetchError>) -> Reading {
+enum Fetched {
+    Number(f64),
+    Text(String),
+}
+
+fn reading_for(entry_id: i64, ts: i64, res: &Result<Fetched, FetchError>) -> Reading {
     match res {
-        Ok(v) => Reading { entry_id, ts, value: Some(*v), status: Status::Live, error: None },
+        Ok(Fetched::Number(v)) => Reading { entry_id, ts, value: Some(*v), status: Status::Live, error: None, text: None },
+        Ok(Fetched::Text(t)) => Reading { entry_id, ts, value: None, status: Status::Live, error: None, text: Some(t.clone()) },
         Err(e) => {
             let status = match e {
                 FetchError::Auth(_) => Status::NoLink,
@@ -64,7 +71,7 @@ fn reading_for(entry_id: i64, ts: i64, res: &Result<f64, FetchError>) -> Reading
                 FetchError::Http(c) if *c >= 500 || *c == 408 => Status::Stale,
                 _ => Status::Error,
             };
-            Reading { entry_id, ts, value: None, status, error: Some(e.to_string()) }
+            Reading { entry_id, ts, value: None, status, error: Some(e.to_string()), text: None }
         }
     }
 }
@@ -80,8 +87,9 @@ impl Scheduler {
         tx: UnboundedSender<CoreEvent>,
         opts: SchedulerOptions,
     ) -> Scheduler {
+        let rt = tokio::runtime::Handle::current();
         let maint_store = store.clone();
-        let maintenance = tokio::spawn(async move {
+        let maintenance = rt.spawn(async move {
             loop {
                 let s = maint_store.clone();
                 let _ = tokio::task::spawn_blocking(move || s.compact(now_ms())).await;
@@ -93,6 +101,7 @@ impl Scheduler {
             fetcher,
             tx,
             tasks: Mutex::new(HashMap::new()),
+            rt,
             permits: Arc::new(Semaphore::new(MAX_PARALLEL_FETCHES)),
             opts,
         });
@@ -118,7 +127,7 @@ impl Scheduler {
             return;
         }
         let me = self.clone();
-        let handle = tokio::spawn(async move { me.poll_loop(entry_id, false).await });
+        let handle = self.inner.rt.spawn(async move { me.poll_loop(entry_id, false).await });
         self.inner.tasks.lock().unwrap().insert(entry_id, handle);
     }
 
@@ -147,7 +156,7 @@ impl Scheduler {
             }
             let me = self.clone();
             let id = e.id;
-            let handle = tokio::spawn(async move { me.poll_loop(id, first).await });
+            let handle = self.inner.rt.spawn(async move { me.poll_loop(id, first).await });
             self.inner.tasks.lock().unwrap().insert(id, handle);
         }
         for e in entries.iter().filter(|e| e.source.is_formula()) {
@@ -164,7 +173,7 @@ impl Scheduler {
             return Err("entry not found".into());
         }
         let ts = now_ms();
-        store.insert_reading(&Reading { entry_id, ts, value: Some(value), status: Status::Live, error: None })
+        store.insert_reading(&Reading { entry_id, ts, value: Some(value), status: Status::Live, error: None, text: None })
             .map_err(|e| e.to_string())?;
         let evs = rules::after_reading(store, entry_id, ts, day_start_ms()).map_err(|e| e.to_string())?;
         self.send(evs);
@@ -186,7 +195,11 @@ impl Scheduler {
             };
             let res = {
                 let _permit = self.inner.permits.acquire().await;
-                self.inner.fetcher.fetch(&entry.source, Local::now()).await
+                if entry.text_mode {
+                    self.inner.fetcher.fetch_text(&entry.source).await.map(Fetched::Text)
+                } else {
+                    self.inner.fetcher.fetch(&entry.source, Local::now()).await.map(Fetched::Number)
+                }
             };
             let ts = now_ms();
             let reading = reading_for(entry_id, ts, &res);
@@ -228,7 +241,9 @@ mod tests {
 
     #[test]
     fn status_mapping() {
-        assert_eq!(reading_for(1, 0, &Ok(3.0)).status, Status::Live);
+        assert_eq!(reading_for(1, 0, &Ok(Fetched::Number(3.0))).status, Status::Live);
+        let t = reading_for(1, 0, &Ok(Fetched::Text("open".into())));
+        assert_eq!((t.status, t.value, t.text.as_deref()), (Status::Live, None, Some("open")));
         assert_eq!(reading_for(1, 0, &Err(FetchError::Timeout)).status, Status::Stale);
         assert_eq!(reading_for(1, 0, &Err(FetchError::Http(503))).status, Status::Stale);
         assert_eq!(reading_for(1, 0, &Err(FetchError::Http(404))).status, Status::Error);

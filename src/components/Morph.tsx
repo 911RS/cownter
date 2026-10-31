@@ -89,6 +89,12 @@ export function Morph({ live, open, position, className, openClass = "open", clo
     };
   }, [live]);
 
+  const repaint = (e: React.TransitionEvent) => {
+    if (e.target !== e.currentTarget || !stage || (e.propertyName !== "width" && e.propertyName !== "height")) return;
+    stage.classList.add("m-fresh");
+    requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove("m-fresh")));
+  };
+
   const origin = `${hs === "start" ? "left" : hs === "end" ? "right" : "center"} ${vs === "start" ? "top" : vs === "end" ? "bottom" : "center"}`;
 
   return (
@@ -99,6 +105,7 @@ export function Morph({ live, open, position, className, openClass = "open", clo
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
         onClick={onClick}
+        onTransitionEnd={repaint}
         title={title}
       >
         <div className="m-clip">

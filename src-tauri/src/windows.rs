@@ -212,8 +212,10 @@ pub fn open_settings(app: &AppHandle) -> tauri::Result<()> {
         w.set_focus()?;
         return Ok(());
     }
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../../assets/icons/256x256.png"))?;
     WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("index.html?w=settings".into()))
         .title("Cownter")
+        .icon(icon)?
         .inner_size(860.0, 580.0)
         .min_inner_size(720.0, 480.0)
         .decorations(false)

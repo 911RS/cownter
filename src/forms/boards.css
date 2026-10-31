@@ -278,7 +278,7 @@
 .form-drawer .side-right { filter: drop-shadow(-4px 0 6px rgba(0, 0, 0, 0.45)); }
 .form-drawer .side-left { filter: drop-shadow(4px 0 6px rgba(0, 0, 0, 0.45)); }
 .no-shadow .b-host, .no-shadow .b-drawer { filter: none !important; }
-.form-folders .b-sticky .delta.up { color: #0a7a38; } .b-sticky .delta.down { color: #b3261e; }
+.b-sticky .delta.up { color: #0a7a38; } .b-sticky .delta.down { color: #b3261e; }
 
 /* Flush forms follow the edge they are anchored to */
 .edge-top.widget-root { padding-top: 0; }

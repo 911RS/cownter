@@ -59,13 +59,41 @@ You keep a browser tab open just to watch one number. Cownter puts that number o
 | **Customize every detail** | **Design alerts and effects** |
 | ![Customize a style](docs/screenshots/settings-customize.png) | ![Alert designer](docs/screenshots/settings-editor.png) |
 
-| Notch | Clothesline | Desktop pet |
+### Style gallery
+
+**Always on screen**
+
+| Island | Floating bar | Taskbar pills |
 | --- | --- | --- |
-| ![Notch](docs/screenshots/form-notch.png) | ![Clothesline](docs/screenshots/form-clothesline.png) | ![Desktop pet](docs/screenshots/form-pet.png) |
-| **Sticky chips** | **Train** | **Folder tabs** |
-| ![Sticky chips](docs/screenshots/form-chips.png) | ![Train](docs/screenshots/form-train.png) | ![Folder tabs](docs/screenshots/form-folders.png) |
-| **Pager** | **Top tabs** | **Pop-up on change** |
-| ![Pager](docs/screenshots/form-pager.png) | ![Top tabs](docs/screenshots/form-toptabs.png) | ![Pop-up](docs/screenshots/form-pop.png) |
+| ![Island](docs/screenshots/form-island.png) | ![Floating bar](docs/screenshots/form-bar.png) | ![Taskbar pills](docs/screenshots/form-pills.png) |
+| **Corner orb** | **Ticker** | **Trend bar** |
+| ![Corner orb](docs/screenshots/form-orb.png) | ![Ticker](docs/screenshots/form-ticker.png) | ![Trend bar](docs/screenshots/form-trend.png) |
+| **Sticky chips** | **Versus** | **Stream overlay** |
+| ![Sticky chips](docs/screenshots/form-chips.png) | ![Versus](docs/screenshots/form-versus.png) | ![Stream overlay](docs/screenshots/form-stream.png) |
+
+**Attached to an edge**
+
+| Edge tab | Pull-out drawer | Welded notch |
+| --- | --- | --- |
+| ![Edge tab](docs/screenshots/form-edge.png) | ![Pull-out drawer](docs/screenshots/form-drawer.png) | ![Welded notch](docs/screenshots/form-notch.png) |
+| **Notch wings** | **Top tabs** | **Folder tabs** |
+| ![Notch wings](docs/screenshots/form-wings.png) | ![Top tabs](docs/screenshots/form-toptabs.png) | ![Folder tabs](docs/screenshots/form-folders.png) |
+| **Taskbar deck** |   |   |
+| ![Taskbar deck](docs/screenshots/form-deck.png) |   |   |
+
+**Playful**
+
+| Hanging tag | Clothesline | Train |
+| --- | --- | --- |
+| ![Hanging tag](docs/screenshots/form-tag.png) | ![Clothesline](docs/screenshots/form-clothesline.png) | ![Train](docs/screenshots/form-train.png) |
+| **Desktop pet** | **Pager** |   |
+| ![Desktop pet](docs/screenshots/form-pet.png) | ![Pager](docs/screenshots/form-pager.png) |   |
+
+**On demand**
+
+| Pop-up on change | Change feed | Quick peek |
+| --- | --- | --- |
+| ![Pop-up on change](docs/screenshots/form-pop.png) | ![Change feed](docs/screenshots/form-feed.png) | ![Quick peek](docs/screenshots/form-peek.png) |
 
 ## On-screen styles
 

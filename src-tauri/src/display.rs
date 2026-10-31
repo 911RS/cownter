@@ -83,7 +83,7 @@ pub struct FormCfg {
     pub gap: f64,
     pub shadow: bool,
     pub show_icons: bool,
-    /// `tile`, `fade`, `glow`, `glyph` or `bar`.
+    /// `tile`, `big`, `fade`, `glow`, `glyph` or `bar`.
     pub icon_style: String,
     pub show_delta: bool,
     /// Island: the page dots next to the number.
@@ -268,7 +268,7 @@ impl DisplayConfig {
             if !matches!(f.tint.as_str(), "white" | "chroma" | "amber" | "phosphor" | "ice" | "ruby" | "violet" | "classic") {
                 f.tint = "white".into();
             }
-            if !matches!(f.icon_style.as_str(), "tile" | "fade" | "glow" | "glyph" | "bar") {
+            if !matches!(f.icon_style.as_str(), "tile" | "big" | "fade" | "glow" | "glyph" | "bar") {
                 f.icon_style = "tile".into();
             }
             if !matches!(f.size.as_str(), "xs" | "s" | "m" | "l" | "xl") {

@@ -195,4 +195,4 @@ export interface TestResult {
   text?: string | null;
 }
 
-export type IconStyle = "tile" | "fade" | "glow" | "glyph" | "bar";
+export type IconStyle = "tile" | "big" | "fade" | "glow" | "glyph" | "bar";

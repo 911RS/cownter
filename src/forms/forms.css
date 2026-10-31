@@ -102,6 +102,7 @@ html.widget, html.widget body {
 .no-icons .entry-icon { display: none; }
 
 /* Icon styles */
+.is-big .entry-icon { zoom: 1.6; }
 :is(.is-fade, .is-bar) :has(> .entry-icon) { position: relative; isolation: isolate; }
 .is-fade .entry-icon, .is-glyph .entry-icon, .is-bar .entry-icon { background: none !important; overflow: visible; }
 .is-fade .entry-icon svg, .is-glyph .entry-icon svg, .is-bar .entry-icon svg { stroke: var(--accent); }

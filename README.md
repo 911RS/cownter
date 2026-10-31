@@ -156,7 +156,7 @@ Every style has four tabs, and every setting is saved per style.
 | **Position** | Screen, anchor (9 spots), side and height for edge styles, and pixel offsets with fine nudge buttons. Widgets can move right up to the edge of the screen. |
 | **Look** | Size, fine scale, background colour and opacity, corner roundness, spacing between tiles, widget opacity and shadow. |
 
-**Icon styles:** tile, colour fade from the left, glowing badge, bare glyph, or a colour bar on the side. Icons can be one of 52 built-in symbols, any emoji, an uploaded image, or a website's own icon, on a background colour of your choice.
+**Icon styles:** tile, big tile, colour fade from the left, glowing badge, bare glyph, or a colour bar on the side. Icons can be one of 52 built-in symbols, any emoji, an uploaded image, or a website's own icon, on a background colour of your choice.
 
 ## Digit looks and colours
 

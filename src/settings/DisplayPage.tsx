@@ -334,12 +334,13 @@ function FormSettings({
             </Row>
           )}
           {!NO_ICONS.includes(k) && f.showIcons && (
-            <Row label="Icon style" hint="Tile, a colour fade from the left, a glowing badge, a bare glyph, or a colour bar on the left.">
+            <Row label="Icon style" hint="Tile, a bigger tile, a colour fade from the left, a glowing badge, a bare glyph, or a colour bar on the left.">
               <Segmented
                 value={f.iconStyle ?? "tile"}
                 onChange={(iconStyle) => onChange({ ...f, iconStyle })}
                 options={[
                   { id: "tile", label: "Tile" },
+                  { id: "big", label: "Big" },
                   { id: "fade", label: "Fade" },
                   { id: "glow", label: "Glow" },
                   { id: "glyph", label: "Glyph" },

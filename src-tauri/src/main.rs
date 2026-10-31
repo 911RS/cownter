@@ -2,6 +2,14 @@
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    #[cfg(windows)]
+    {
+        // Release builds have no console of their own; print to the terminal that started us.
+        if cownter_lib::cli::parse(&args).is_some() {
+            use windows_sys::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
+            unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
+        }
+    }
     if let Some(code) = cownter_lib::cli::run(&args) {
         std::process::exit(code);
     }

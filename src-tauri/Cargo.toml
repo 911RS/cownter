@@ -28,5 +28,8 @@ rand = "0.9"
 chrono = "0.4"
 dirs = "7"
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18"

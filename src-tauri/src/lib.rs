@@ -3,6 +3,7 @@ mod display;
 mod hit;
 mod hotkeys;
 mod pixfont;
+mod snapshot;
 mod state;
 mod tray;
 mod windows;
@@ -173,6 +174,7 @@ pub fn run() {
             commands::simulate_change,
             commands::weekly_recap,
             commands::show_recap,
+            commands::save_snapshot,
             commands::keyring_available,
             commands::has_secrets,
             commands::save_display,

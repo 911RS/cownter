@@ -6,6 +6,7 @@ import type { Entry, EntryView, Group } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
 import { Spark } from "../components/Spark";
 import { blankEntry } from "./EntryEditor";
+import { ShareSheet } from "./ShareSheet";
 import { Banner } from "./ui";
 
 const STATUS_LABEL: Record<string, string> = { live: "Live", polling: "Checking", stale: "Out of date", error: "Error", noLink: "Key rejected" };
@@ -31,6 +32,8 @@ export function NumbersPage({
   const [filter, setFilter] = useState<number | "all">("all");
   const [newGroup, setNewGroup] = useState<string | null>(null);
   const [err, setErr] = useState("");
+  const [sharing, setSharing] = useState<number | null>(null);
+  const shared = sharing === null ? undefined : views.find((v) => v.entry.id === sharing);
   const sorted = [...views].sort((a, b) => a.entry.sort - b.entry.sort || a.entry.id - b.entry.id);
   const list = filter === "all" ? sorted : sorted.filter((v) => v.entry.groupId === filter);
 
@@ -182,9 +185,25 @@ export function NumbersPage({
                 </>
               )}
             </div>
+            <button
+              type="button"
+              className="icon-btn share-btn"
+              title="Share a snapshot"
+              aria-label={`Share ${v.entry.name}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSharing(v.entry.id);
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6" />
+              </svg>
+            </button>
           </div>
         ))}
       </div>
+      {shared && <ShareSheet view={shared} onClose={() => setSharing(null)} />}
     </div>
   );
 }

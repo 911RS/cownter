@@ -13,7 +13,7 @@ use cownter_core::store::DAY_MS;
 use serde::Serialize;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, State, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
 
 type R<T> = Result<T, String>;
 
@@ -247,6 +247,16 @@ pub fn weekly_recap(state: State<AppState>) -> R<Recap> {
 #[tauri::command]
 pub fn show_recap(app: AppHandle) -> R<()> {
     windows::show_recap(&app).map_err(e)
+}
+
+/// Saves a PNG snapshot to the Pictures folder and returns the file path.
+#[tauri::command]
+pub fn save_snapshot(app: AppHandle, name: String, png: String) -> R<String> {
+    let bytes = crate::snapshot::decode(&png)?;
+    let dir = app.path().picture_dir().or_else(|_| app.path().home_dir().map(|h| h.join("Pictures"))).map_err(e)?;
+    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let path = crate::snapshot::write(&dir, &name, &date, &bytes)?;
+    Ok(path.display().to_string())
 }
 
 #[tauri::command]

@@ -31,6 +31,7 @@ export const api = {
   simulateChange: (entryId: number, value: number) => invoke<void>("simulate_change", { entryId, value }),
   weeklyRecap: () => invoke<Recap>("weekly_recap"),
   showRecap: () => invoke<void>("show_recap"),
+  saveSnapshot: (name: string, png: string) => invoke<string>("save_snapshot", { name, png }),
   keyringAvailable: () => invoke<boolean>("keyring_available"),
   hasSecrets: (names: string[]) => invoke<boolean[]>("has_secrets", { names }),
   getDisplay: () => invoke<DisplayConfig>("get_display"),

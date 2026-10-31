@@ -37,6 +37,7 @@
     "allow-quit-app",
     "allow-list-monitors",
     "allow-weekly-recap",
-    "allow-show-recap"
+    "allow-show-recap",
+    "allow-save-snapshot"
   ]
 }

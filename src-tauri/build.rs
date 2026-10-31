@@ -21,6 +21,7 @@ const COMMANDS: &[&str] = &[
     "simulate_change",
     "weekly_recap",
     "show_recap",
+    "save_snapshot",
     "keyring_available",
     "has_secrets",
     "save_display",

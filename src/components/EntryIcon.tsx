@@ -1,7 +1,7 @@
 import type { Icon } from "../core/types";
 import { BUILTIN_ICONS } from "./icons";
 
-function light(hex: string): boolean {
+export function light(hex: string): boolean {
   const m = /^#([0-9a-f]{6})$/i.exec(hex);
   if (!m) return false;
   const n = parseInt(m[1], 16);

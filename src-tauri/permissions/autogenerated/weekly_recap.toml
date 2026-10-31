@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-weekly-recap"
+description = "Enables the weekly_recap command without any pre-configured scope."
+commands.allow = ["weekly_recap"]
+
+[[permission]]
+identifier = "deny-weekly-recap"
+description = "Denies the weekly_recap command without any pre-configured scope."
+commands.deny = ["weekly_recap"]

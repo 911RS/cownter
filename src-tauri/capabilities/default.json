@@ -27,7 +27,8 @@
     "pills",
     "bar",
     "versus",
-    "toptabs"
+    "toptabs",
+    "recap"
   ],
   "permissions": [
     "core:default",
@@ -36,6 +37,7 @@
     "allow-widget-resize",
     "allow-widget-done",
     "allow-open-settings",
-    "allow-refresh-all"
+    "allow-refresh-all",
+    "allow-weekly-recap"
   ]
 }

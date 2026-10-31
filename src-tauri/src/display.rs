@@ -171,6 +171,9 @@ pub struct DisplayConfig {
     pub launch_at_login: bool,
     pub hidden: bool,
     pub onboarded: bool,
+    pub weekly_recap: bool,
+    /// Day the weekly recap shows, 0 = Monday to 6 = Sunday.
+    pub recap_weekday: u32,
 }
 
 impl Default for DisplayConfig {
@@ -191,6 +194,8 @@ impl Default for DisplayConfig {
             launch_at_login: false,
             hidden: false,
             onboarded: false,
+            weekly_recap: true,
+            recap_weekday: 0,
         }
     }
 }
@@ -305,6 +310,7 @@ impl DisplayConfig {
                 f.form_opts.pop_last();
             }
         }
+        self.recap_weekday = self.recap_weekday.min(6);
         self.volume = if self.volume.is_finite() { self.volume.clamp(0.0, 1.0) } else { 0.6 };
         self
     }
@@ -330,6 +336,8 @@ mod tests {
         assert_eq!(c.island.tint, "ice");
         assert_eq!(c.island.skin, "clean");
         assert_eq!(c.hotkey_toggle, "CommandOrControl+Shift+U");
+        assert!(c.weekly_recap);
+        assert_eq!(c.recap_weekday, 0);
     }
 
     #[test]
@@ -338,7 +346,9 @@ mod tests {
         c.island.skin = "x".into();
         c.edge.offset = 9.0;
         c.volume = f64::NAN;
+        c.recap_weekday = 12;
         let c = c.sanitized();
+        assert_eq!(c.recap_weekday, 6);
         assert_eq!(c.island.skin, "clean");
         assert_eq!(c.edge.offset, 1.0);
         assert_eq!(c.volume, 0.6);

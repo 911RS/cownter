@@ -19,6 +19,8 @@ const COMMANDS: &[&str] = &[
     "fetch_favicon",
     "entry_history",
     "simulate_change",
+    "weekly_recap",
+    "show_recap",
     "keyring_available",
     "has_secrets",
     "save_display",

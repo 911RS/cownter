@@ -22,9 +22,10 @@ pub fn build(app: &AppHandle) -> tauri::Result<TrayIcon> {
     let open = MenuItem::with_id(app, "open", "Open Cownter", true, None::<&str>)?;
     let toggle = MenuItem::with_id(app, "toggle", "Show / hide widgets", true, None::<&str>)?;
     let refresh = MenuItem::with_id(app, "refresh", "Refresh all", true, None::<&str>)?;
+    let recap = MenuItem::with_id(app, "recap", "Weekly recap", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
-    let menu = Menu::with_items(app, &[&open, &toggle, &refresh, &sep, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &toggle, &refresh, &recap, &sep, &quit])?;
     let tray = TrayIconBuilder::with_id(TRAY_ID)
         .icon(base_icon())
         .icon_as_template(cfg!(target_os = "macos"))
@@ -40,6 +41,9 @@ pub fn build(app: &AppHandle) -> tauri::Result<TrayIcon> {
                 if let Some(s) = app.try_state::<AppState>() {
                     s.scheduler.refresh_all();
                 }
+            }
+            "recap" => {
+                let _ = crate::windows::show_recap(app);
             }
             "quit" => app.exit(0),
             _ => {}

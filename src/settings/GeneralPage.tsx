@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { api } from "../core/api";
+import { api, errorText } from "../core/api";
 import { SOUNDS, playSound } from "../core/sounds";
 import type { DisplayConfig } from "../core/types";
 import logo from "../../assets/branding/cownter-symbol.png";
-import { Group, HotkeyInput, Row, Toggle } from "./ui";
+import { Banner, Group, HotkeyInput, Row, Toggle } from "./ui";
+
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export function GeneralPage({ cfg, keyring, onChange }: { cfg: DisplayConfig; keyring: boolean; onChange: (c: DisplayConfig) => void }) {
   const [info, setInfo] = useState<{ os: string; version: string } | null>(null);
+  const [recapErr, setRecapErr] = useState("");
   useEffect(() => {
     api.platformInfo().then(setInfo).catch(() => {});
   }, []);
@@ -32,6 +35,27 @@ export function GeneralPage({ cfg, keyring, onChange }: { cfg: DisplayConfig; ke
             ))}
           </div>
         </Row>
+      </Group>
+
+      <Group title="Weekly recap">
+        <Row label="Weekly recap" hint="A card with how each number moved over the last 7 days, shown once a week after 9:00.">
+          <Toggle checked={cfg.weeklyRecap} onChange={(weeklyRecap) => onChange({ ...cfg, weeklyRecap })} />
+        </Row>
+        <Row label="Day">
+          <select value={cfg.recapWeekday} disabled={!cfg.weeklyRecap} onChange={(e) => onChange({ ...cfg, recapWeekday: Number(e.target.value) })}>
+            {WEEKDAYS.map((d, i) => (
+              <option key={d} value={i}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row label="Preview" hint="Shows the card where pop-ups appear.">
+          <button type="button" className="btn" onClick={() => api.showRecap().then(() => setRecapErr("")).catch((e) => setRecapErr(errorText(e)))}>
+            Show recap now
+          </button>
+        </Row>
+        {recapErr && <Banner kind="error">{recapErr}</Banner>}
       </Group>
 
       <Group title="Shortcuts">

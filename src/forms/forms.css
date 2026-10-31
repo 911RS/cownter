@@ -274,3 +274,30 @@ html.widget, html.widget body {
 @media (prefers-reduced-motion: reduce) {
   .m-stage.armed > .m-panel, .m-stage.armed .m-layer { transition: none; }
 }
+
+/* Weekly recap */
+.recap {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--s));
+  min-width: calc(300px * var(--s));
+  background: var(--bg, #000);
+  border-radius: calc(16px * var(--s) * var(--r, 1));
+  padding: calc(14px * var(--s)) calc(18px * var(--s));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  animation: pop-in 0.5s cubic-bezier(0.2, 1.2, 0.3, 1), pop-out 0.4s ease-in 14.6s forwards;
+  cursor: pointer;
+}
+.recap-head { display: flex; align-items: baseline; justify-content: space-between; gap: calc(16px * var(--s)); margin-bottom: calc(2px * var(--s)); }
+.recap-head b { font-size: calc(12px * var(--s)); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #e8eaf0; }
+.recap-head span { font-size: calc(11px * var(--s)); font-weight: 600; color: #8a92a0; white-space: nowrap; }
+.recap-empty { margin: 0; font-size: calc(12px * var(--s)); color: #9aa3b2; }
+.recap-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: calc(10px * var(--s)); align-items: center; }
+.recap-row .entry-icon { grid-row: span 2; }
+.recap-name { display: flex; align-items: baseline; gap: calc(6px * var(--s)); min-width: 0; }
+.recap-name b { font-size: calc(13px * var(--s)); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(170px * var(--s)); }
+.recap-name small { font-size: calc(11px * var(--s)); color: #8a92a0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.recap-change { grid-row: span 2; font-size: calc(15px * var(--s)); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.recap-change.muted { color: #9aa3b2; }
+.recap-best { font-size: calc(10px * var(--s)); font-weight: 600; color: #8a92a0; white-space: nowrap; }
+.no-shadow .recap { box-shadow: none; }

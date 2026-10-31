@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-show-recap"
+description = "Enables the show_recap command without any pre-configured scope."
+commands.allow = ["show_recap"]
+
+[[permission]]
+identifier = "deny-show-recap"
+description = "Denies the show_recap command without any pre-configured scope."
+commands.deny = ["show_recap"]

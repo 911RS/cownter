@@ -76,6 +76,19 @@ export interface EntryView {
   prevText?: string | null;
 }
 
+export interface RecapItem {
+  entry: Entry;
+  value: number;
+  change: number;
+  bestDay: { day: number; gain: number } | null;
+}
+
+export interface Recap {
+  since: number;
+  until: number;
+  items: RecapItem[];
+}
+
 export type AlertKind = "above" | "below" | "changePct" | "riseBy" | "dropBy";
 export type AlertEffect = "" | "float" | "pop" | "burst" | "confetti" | "shake" | "glow" | "flash" | "zoom" | "rain";
 
@@ -184,6 +197,8 @@ export interface DisplayConfig {
   launchAtLogin: boolean;
   hidden: boolean;
   onboarded: boolean;
+  weeklyRecap: boolean;
+  recapWeekday: number;
 }
 
 export interface TestResult {

@@ -62,6 +62,7 @@ import { EdgeTab } from "./forms/EdgeTab";
 import { Island } from "./forms/Island";
 import { Overlay } from "./forms/Overlay";
 import { Pop } from "./forms/Pop";
+import { Recap } from "./forms/Recap";
 import { BOARD_IDS } from "./forms/registry";
 import { Settings } from "./settings/Settings";
 
@@ -70,6 +71,7 @@ const widgets: Record<string, () => React.ReactElement> = {
   island: () => <Island />,
   edge: () => <EdgeTab />,
   pop: () => <Pop />,
+  recap: () => <Recap />,
   overlay: () => <Overlay />,
 };
 for (const id of BOARD_IDS) widgets[id] = () => <Board id={id} />;

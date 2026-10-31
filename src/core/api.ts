@@ -7,6 +7,7 @@ import type {
   Entry,
   EntryView,
   Group,
+  Recap,
   SourceCfg,
   TestResult,
 } from "./types";
@@ -28,6 +29,8 @@ export const api = {
   fetchFavicon: (url: string) => invoke<string>("fetch_favicon", { url }),
   entryHistory: (entryId: number, days: number) => invoke<[number, number][]>("entry_history", { entryId, days }),
   simulateChange: (entryId: number, value: number) => invoke<void>("simulate_change", { entryId, value }),
+  weeklyRecap: () => invoke<Recap>("weekly_recap"),
+  showRecap: () => invoke<void>("show_recap"),
   keyringAvailable: () => invoke<boolean>("keyring_available"),
   hasSecrets: (names: string[]) => invoke<boolean[]>("has_secrets", { names }),
   getDisplay: () => invoke<DisplayConfig>("get_display"),

@@ -1,11 +1,11 @@
 use crate::display::{DisplayConfig, EXTRA_FORMS};
-use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 /// Part of a widget window that always stays on screen, in logical pixels.
 const KEEP_VISIBLE: f64 = 24.0;
 const MARGIN: f64 = 0.0;
 /// Forms that only appear for a moment (on a change or a shortcut).
-const TRANSIENT: [&str; 2] = ["pop", "peek"];
+const TRANSIENT: [&str; 3] = ["pop", "peek", "recap"];
 /// Forms docked to the left or right screen edge.
 const DOCKED: [&str; 2] = ["edge", "drawer"];
 /// Forms that touch the screen edge they are anchored to.
@@ -127,7 +127,7 @@ fn anchor(position: &str, a: &Area, width: f64, height: f64, margin: f64) -> (f6
 /// Sizes a widget window (logical pixels) and places it according to its form and the config.
 pub fn place(app: &AppHandle, cfg: &DisplayConfig, label: &str, width: f64, height: f64, show: bool) -> Result<(), String> {
     let w = app.get_webview_window(label).ok_or("window not found")?;
-    let form = cfg.form(label);
+    let form = cfg.form(if label == "recap" { "pop" } else { label });
     let a = area(&w, form.map(|f| f.monitor.as_str()).unwrap_or("")).ok_or("no monitor found")?;
     let travel = label == "train" && form.is_some_and(|f| f.form_opts.get("travel") != Some(&false));
     let (width, height) = if form.is_none() { (a.w, a.h) } else { (width.clamp(1.0, a.w), height.clamp(1.0, a.h)) };
@@ -203,6 +203,14 @@ pub fn monitors(app: &AppHandle) -> Vec<String> {
     names.sort_by_key(|n| Some(n) != primary.as_ref());
     names.dedup();
     names
+}
+
+/// Shows the weekly recap card; the window is created on first use and loads the recap when it starts.
+pub fn show_recap(app: &AppHandle) -> tauri::Result<()> {
+    if app.get_webview_window("recap").is_some() {
+        return app.emit_to("recap", "recap", ());
+    }
+    build_widget(app, "recap").map(|_| ())
 }
 
 pub fn open_settings(app: &AppHandle) -> tauri::Result<()> {

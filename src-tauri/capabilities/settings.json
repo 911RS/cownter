@@ -35,6 +35,8 @@
     "allow-save-display",
     "allow-platform-info",
     "allow-quit-app",
-    "allow-list-monitors"
+    "allow-list-monitors",
+    "allow-weekly-recap",
+    "allow-show-recap"
   ]
 }

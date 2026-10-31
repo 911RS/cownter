@@ -4,6 +4,7 @@ use crate::{hotkeys, tray, windows};
 use base64::Engine;
 use cownter_core::formula;
 use cownter_core::model::*;
+use cownter_core::recap::{self, Recap};
 use cownter_core::rules;
 use cownter_core::scheduler::{day_start_ms, now_ms};
 use cownter_core::secrets::{LayeredSecrets, MemorySecrets, SecretStore};
@@ -236,6 +237,16 @@ pub async fn fetch_favicon(url: String) -> R<String> {
 pub fn entry_history(state: State<AppState>, entry_id: i64, days: u32) -> R<Vec<(i64, f64)>> {
     let now = now_ms();
     state.store.spark(entry_id, now - days.clamp(1, 3650) as i64 * DAY_MS, now, 120).map_err(e)
+}
+
+#[tauri::command]
+pub fn weekly_recap(state: State<AppState>) -> R<Recap> {
+    recap::weekly_recap(&state.store, now_ms(), day_start_ms()).map_err(e)
+}
+
+#[tauri::command]
+pub fn show_recap(app: AppHandle) -> R<()> {
+    windows::show_recap(&app).map_err(e)
 }
 
 #[tauri::command]

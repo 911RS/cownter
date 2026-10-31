@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compact, etaDate, formatDelta, formatValue, goalLeft, intervalLabel, slugify, timeAgo } from "./format";
+import { compact, dateRange, etaDate, formatDelta, formatValue, goalLeft, intervalLabel, slugify, timeAgo, weekday } from "./format";
 
 describe("compact", () => {
   it("shortens large numbers", () => {
@@ -90,5 +90,12 @@ describe("goalLeft", () => {
 
   it("adds the year to far dates", () => {
     expect(etaDate(Date.UTC(2028, 2, 3, 12), now)).toBe("Mar 2028");
+  });
+});
+
+describe("weekday and dateRange", () => {
+  it("names the day and the week", () => {
+    expect(weekday(new Date(2026, 10, 3, 12).getTime())).toBe("Tue");
+    expect(dateRange(new Date(2026, 9, 24, 9).getTime(), new Date(2026, 9, 31, 9).getTime())).toBe("Oct 24 – Oct 31");
   });
 });

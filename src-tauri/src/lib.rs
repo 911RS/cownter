@@ -8,7 +8,7 @@ mod tray;
 mod windows;
 
 use cownter_core::model::CoreEvent;
-use cownter_core::rules;
+use cownter_core::{recap, rules};
 use cownter_core::scheduler::{Scheduler, day_start_ms, now_ms};
 use cownter_core::secrets::{KeyringSecrets, SecretStore};
 use cownter_core::sources::Fetcher;
@@ -64,6 +64,22 @@ fn notify(app: &AppHandle, body: &str) {
     let _ = app.notification().builder().title("Cownter").body(body).show();
 }
 
+/// Shows the weekly recap once per week when it is due and something was tracked.
+fn check_recap(app: &AppHandle) {
+    let Some(state) = app.try_state::<AppState>() else { return };
+    let cfg = state.display();
+    if !cfg.weekly_recap {
+        return;
+    }
+    let due = recap::take_due(&state.store, chrono::Local::now().naive_local(), cfg.recap_weekday).unwrap_or(false);
+    let any = due && recap::weekly_recap(&state.store, now_ms(), day_start_ms()).is_ok_and(|r| !r.items.is_empty());
+    if any {
+        if let Err(e) = windows::show_recap(app) {
+            eprintln!("recap window: {e}");
+        }
+    }
+}
+
 fn forward_events(app: AppHandle, mut rx: tokio::sync::mpsc::UnboundedReceiver<CoreEvent>) {
     tauri::async_runtime::spawn(async move {
         while let Some(ev) = rx.recv().await {
@@ -111,6 +127,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             refresh_tray(&later);
         }
     });
+    let recap_app = handle.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(20)).await;
+        loop {
+            check_recap(&recap_app);
+            tokio::time::sleep(std::time::Duration::from_secs(300)).await;
+        }
+    });
     if !display.onboarded || store.entries()?.is_empty() {
         windows::open_settings(&handle)?;
     }
@@ -147,6 +171,8 @@ pub fn run() {
             commands::fetch_favicon,
             commands::entry_history,
             commands::simulate_change,
+            commands::weekly_recap,
+            commands::show_recap,
             commands::keyring_available,
             commands::has_secrets,
             commands::save_display,

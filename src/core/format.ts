@@ -83,3 +83,14 @@ export function intervalLabel(s: number): string {
   if (s < 3600) return `${Math.round(s / 60)} min`;
   return `${Math.round(s / 3600)} h`;
 }
+
+/** Short weekday such as "Tue". */
+export function weekday(ts: number): string {
+  return new Date(ts).toLocaleDateString("en-US", { weekday: "short" });
+}
+
+/** Date range such as "Oct 24 – Oct 31". */
+export function dateRange(from: number, to: number): string {
+  const f = (ts: number) => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${f(from)} – ${f(to)}`;
+}

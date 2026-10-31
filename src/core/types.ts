@@ -236,3 +236,29 @@ export interface TestResult {
 }
 
 export type IconStyle = "tile" | "big" | "fade" | "glow" | "glyph" | "bar";
+
+export interface SyncNotice {
+  from: string;
+  at: number;
+}
+
+export interface SyncInfo {
+  folder: string | null;
+  suggested: string;
+  file: string | null;
+  machineId: string;
+  hostname: string;
+  exportedAt: number | null;
+  appliedAt: number | null;
+  notice: SyncNotice | null;
+  pending: SyncNotice | null;
+  error: string | null;
+}
+
+export interface ImportReport {
+  from: string;
+  entries: number;
+  groups: number;
+  alerts: number;
+  skipped: string[];
+}

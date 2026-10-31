@@ -7,9 +7,11 @@ import type {
   Entry,
   EntryView,
   Group,
+  ImportReport,
   PushInfo,
   Recap,
   SourceCfg,
+  SyncInfo,
   TestResult,
 } from "./types";
 
@@ -39,6 +41,11 @@ export const api = {
   pushInfo: () => invoke<PushInfo>("push_info"),
   regeneratePushToken: () => invoke<PushInfo>("regenerate_push_token"),
   restartPush: () => invoke<PushInfo>("restart_push"),
+  syncInfo: () => invoke<SyncInfo>("sync_info"),
+  setSyncFolder: (folder: string | null) => invoke<SyncInfo>("set_sync_folder", { folder }),
+  syncExportNow: () => invoke<SyncInfo>("sync_export_now"),
+  syncImportNow: () => invoke<ImportReport>("sync_import_now"),
+  syncDismissNotice: () => invoke<void>("sync_dismiss_notice"),
   getDisplay: () => invoke<DisplayConfig>("get_display"),
   saveDisplay: (cfg: DisplayConfig) => invoke<DisplayConfig>("save_display", { cfg }),
   widgetResize: (width: number, height: number, show: boolean) =>
@@ -62,6 +69,10 @@ export function onDisplayChanged(cb: (c: DisplayConfig) => void): Promise<Unlist
 
 export function onPushChanged(cb: (p: PushInfo) => void): Promise<UnlistenFn> {
   return listen<PushInfo>("push-changed", (ev) => cb(ev.payload));
+}
+
+export function onSettingsSynced(cb: (r: ImportReport) => void): Promise<UnlistenFn> {
+  return listen<ImportReport>("settings-synced", (ev) => cb(ev.payload));
 }
 
 export function onReordered(cb: (ids: number[]) => void): Promise<UnlistenFn> {

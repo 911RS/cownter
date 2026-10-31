@@ -1,8 +1,8 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, errorText } from "../core/api";
+import { api, errorText, onSettingsSynced } from "../core/api";
 import { useDisplay, useEntriesState } from "../core/hooks";
-import type { DisplayConfig, Entry, Group } from "../core/types";
+import type { DisplayConfig, Entry, Group, SyncNotice } from "../core/types";
 import symbol from "../../assets/branding/cownter-symbol.png";
 import { DisplayPage } from "./DisplayPage";
 import { EntryEditor } from "./EntryEditor";
@@ -21,6 +21,7 @@ export function Settings() {
   const [page, setPage] = useState<Page>("numbers");
   const [editing, setEditing] = useState<Entry | null>(null);
   const [saveErr, setSaveErr] = useState("");
+  const [synced, setSynced] = useState<SyncNotice | null>(null);
   const pending = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const loadGroups = useCallback(() => {
@@ -30,6 +31,14 @@ export function Settings() {
   useEffect(() => {
     loadGroups();
     api.keyringAvailable().then(setKeyring).catch(() => setKeyring(false));
+    api.syncInfo().then((i) => setSynced(i.notice)).catch(() => {});
+    const un = onSettingsSynced(() => {
+      loadGroups();
+      api.syncInfo().then((i) => setSynced(i.notice)).catch(() => {});
+    });
+    return () => {
+      un.then((f) => f());
+    };
   }, [loadGroups]);
 
   useEffect(() => {
@@ -101,6 +110,21 @@ export function Settings() {
       </div>
       <main className="main">
         {saveErr && <Banner kind="error">{saveErr}</Banner>}
+        {synced && (
+          <div className="sync-notice">
+            <Banner kind="info">Settings updated from {synced.from}</Banner>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => {
+                setSynced(null);
+                api.syncDismissNotice().catch(() => {});
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
         {page === "numbers" && (
           <NumbersPage views={views} groups={groups} onEdit={setEditing} onGroupsChanged={loadGroups} onboarded={!cfg || !loaded || cfg.onboarded || views.length > 0} />
         )}

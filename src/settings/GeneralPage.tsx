@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { api, errorText, onPushChanged } from "../core/api";
+import { api, errorText, onPushChanged, onSettingsSynced } from "../core/api";
+import { timeAgo } from "../core/format";
 import { PACKS, ROLE_DEFAULT, SOUNDS, playSound, resolveSound } from "../core/sounds";
-import type { DisplayConfig, EntryView, PushInfo } from "../core/types";
+import type { DisplayConfig, EntryView, PushInfo, SyncInfo } from "../core/types";
 import logo from "../../assets/branding/cownter-symbol.png";
 import { curlExample, maskToken, parsePort } from "./push";
 import { Banner, Group, HotkeyInput, Row, Toggle } from "./ui";
@@ -103,6 +104,113 @@ function PushGroup({ cfg, views, onChange }: { cfg: DisplayConfig; views: EntryV
   );
 }
 
+function SyncGroup() {
+  const [info, setInfo] = useState<SyncInfo | null>(null);
+  const [path, setPath] = useState("");
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  const load = () =>
+    api
+      .syncInfo()
+      .then((i) => {
+        setInfo(i);
+        setPath(i.folder ?? "");
+      })
+      .catch((e) => setErr(errorText(e)));
+  useEffect(() => {
+    load();
+    const un = onSettingsSynced(() => load());
+    return () => {
+      un.then((f) => f());
+    };
+  }, []);
+
+  const run = (p: Promise<SyncInfo>, done: string) =>
+    p
+      .then((i) => {
+        setInfo(i);
+        setPath(i.folder ?? "");
+        setErr("");
+        setMsg(done);
+      })
+      .catch((e) => {
+        setMsg("");
+        setErr(errorText(e));
+      });
+  const commit = () => {
+    const next = path.trim() || null;
+    if (next === (info?.folder ?? null)) return;
+    run(api.setSyncFolder(next), next ? "Syncing with this folder." : "Sync is off.");
+  };
+  const importNow = () =>
+    api
+      .syncImportNow()
+      .then((r) => {
+        setErr("");
+        setMsg(`Imported from ${r.from}: ${r.entries} numbers, ${r.groups} groups, ${r.alerts} alerts changed.` + (r.skipped.length ? ` Skipped: ${r.skipped.join("; ")}` : ""));
+        load();
+      })
+      .catch((e) => {
+        setMsg("");
+        setErr(errorText(e));
+      });
+
+  const on = !!info?.folder;
+  return (
+    <Group title="Sync settings">
+      <Row label="Folder" hint="Point every computer at the same synced folder (Syncthing, Dropbox, iCloud Drive). Numbers, groups, alerts and the on-screen setup are shared; keys and tokens stay in each computer's keyring.">
+        <input className="mono sync-path" spellCheck={false} value={path} placeholder={info?.suggested ?? ""} onChange={(e) => setPath(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === "Enter" && commit()} />
+      </Row>
+      {!on && info && (
+        <Row label="Suggested">
+          <button type="button" className="btn" onClick={() => run(api.setSyncFolder(info.suggested), "Syncing with this folder.")}>
+            Use {info.suggested}
+          </button>
+        </Row>
+      )}
+      {on && info && (
+        <>
+          <Row label="This computer" hint={`Settings are written to ${info.file} whenever they change.`}>
+            <span className="mono">{info.hostname}</span>
+          </Row>
+          {info.pending && (
+            <div className="push-note">
+              <Banner kind="info">
+                Newer settings from {info.pending.from} ({timeAgo(info.pending.at)}) are waiting.
+              </Banner>
+            </div>
+          )}
+          <Row label="Last export" hint={info.appliedAt ? `Last import ${timeAgo(info.appliedAt)}` : undefined}>
+            <span className="muted">{timeAgo(info.exportedAt)}</span>
+            <button type="button" className="btn" onClick={() => run(api.syncExportNow(), "Exported.")}>
+              Export now
+            </button>
+            <button type="button" className={"btn" + (info.pending ? " primary" : "")} onClick={importNow}>
+              Import now
+            </button>
+          </Row>
+          <Row label="Stop syncing">
+            <button type="button" className="btn ghost" onClick={() => run(api.setSyncFolder(null), "Sync is off.")}>
+              Turn off
+            </button>
+          </Row>
+        </>
+      )}
+      {(err || info?.error) && (
+        <div className="push-note">
+          <Banner kind="error">{err || info?.error}</Banner>
+        </div>
+      )}
+      {msg && !err && (
+        <div className="push-note">
+          <Banner kind="ok">{msg}</Banner>
+        </div>
+      )}
+    </Group>
+  );
+}
+
 export function GeneralPage({ cfg, views, keyring, onChange }: { cfg: DisplayConfig; views: EntryView[]; keyring: boolean; onChange: (c: DisplayConfig) => void }) {
   const [info, setInfo] = useState<{ os: string; version: string } | null>(null);
   const [recapErr, setRecapErr] = useState("");
@@ -187,6 +295,8 @@ export function GeneralPage({ cfg, views, keyring, onChange }: { cfg: DisplayCon
       </Group>
 
       <PushGroup cfg={cfg} views={views} onChange={onChange} />
+
+      <SyncGroup />
 
       <Group title="System">
         <Row label="Start at login">

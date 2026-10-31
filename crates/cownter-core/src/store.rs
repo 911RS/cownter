@@ -211,11 +211,24 @@ impl Store {
     }
 
     pub fn insert_entry(&self, e: &Entry, now: i64) -> Result<i64> {
+        self.insert_entry_as(e, now, None)
+    }
+
+    /// Inserts the entry under its own id, or updates it when that id exists.
+    pub fn put_entry(&self, e: &Entry, now: i64) -> Result<()> {
+        if self.entry(e.id)?.is_some() {
+            self.update_entry(e)
+        } else {
+            self.insert_entry_as(e, now, Some(e.id)).map(|_| ())
+        }
+    }
+
+    fn insert_entry_as(&self, e: &Entry, now: i64, id: Option<i64>) -> Result<i64> {
         Self::validate(e)?;
         let c = self.c();
         c.execute(
-            "INSERT INTO entries(slug, name, icon_json, group_id, source_cfg_json, interval_s, format_json, goal_value, celebrate, sort, created_at, sounds_json, text_mode, goal_text)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+            "INSERT INTO entries(slug, name, icon_json, group_id, source_cfg_json, interval_s, format_json, goal_value, celebrate, sort, created_at, sounds_json, text_mode, goal_text, id)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
             params![
                 e.slug,
                 e.name.trim(),
@@ -230,7 +243,8 @@ impl Store {
                 now,
                 to_json(&e.sounds),
                 e.text_mode as i64,
-                clean_goal_text(&e.goal_text)
+                clean_goal_text(&e.goal_text),
+                id
             ],
         )
         .map_err(Self::map_unique)?;
@@ -333,6 +347,18 @@ impl Store {
         }
     }
 
+    /// Inserts the group under its own id, or updates it when that id exists.
+    pub fn put_group(&self, g: &Group) -> Result<()> {
+        if g.name.trim().is_empty() || g.id <= 0 {
+            return Err(StoreError::Invalid("group name is required".into()));
+        }
+        self.c().execute(
+            "INSERT INTO groups(id, name, sort) VALUES (?1, ?2, ?3) ON CONFLICT(id) DO UPDATE SET name=excluded.name, sort=excluded.sort",
+            params![g.id, g.name.trim(), g.sort],
+        )?;
+        Ok(())
+    }
+
     pub fn delete_group(&self, id: i64) -> Result<()> {
         self.c().execute("DELETE FROM groups WHERE id = ?1", [id])?;
         Ok(())
@@ -351,7 +377,22 @@ impl Store {
         Ok(rows)
     }
 
-    pub fn upsert_alert(&self, a: &Alert) -> Result<i64> {
+    /// Inserts the alert under its own id, or updates it when that id exists.
+    pub fn put_alert(&self, a: &Alert) -> Result<()> {
+        Self::validate_alert(a)?;
+        if a.id <= 0 {
+            return Err(StoreError::Invalid("alert id is required".into()));
+        }
+        self.c().execute(
+            "INSERT INTO alerts(id, entry_id, kind, threshold, window_s, enabled, notify, effect) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+             ON CONFLICT(id) DO UPDATE SET entry_id=excluded.entry_id, kind=excluded.kind, threshold=excluded.threshold, window_s=excluded.window_s,
+             enabled=excluded.enabled, notify=excluded.notify, effect=excluded.effect, armed=1",
+            params![a.id, a.entry_id, a.kind.as_str(), a.threshold, a.window_s, a.enabled as i64, a.notify as i64, a.effect],
+        )?;
+        Ok(())
+    }
+
+    fn validate_alert(a: &Alert) -> Result<()> {
         if !a.threshold.is_finite() {
             return Err(StoreError::Invalid("threshold must be a number".into()));
         }
@@ -364,6 +405,11 @@ impl Store {
         if !crate::model::ALERT_EFFECTS.contains(&a.effect.as_str()) {
             return Err(StoreError::Invalid("unknown effect".into()));
         }
+        Ok(())
+    }
+
+    pub fn upsert_alert(&self, a: &Alert) -> Result<i64> {
+        Self::validate_alert(a)?;
         let c = self.c();
         if a.id > 0 {
             c.execute(
@@ -610,6 +656,29 @@ pub(crate) mod tests {
 
     fn reading(id: i64, ts: i64, v: Option<f64>, s: Status) -> Reading {
         Reading { entry_id: id, ts, value: v, status: s, error: None, text: None }
+    }
+
+    #[test]
+    fn put_keeps_the_given_ids() {
+        let s = Store::open_memory().unwrap();
+        s.put_group(&Group { id: 7, name: "Shop".into(), sort: 1 }).unwrap();
+        s.put_group(&Group { id: 7, name: "Store".into(), sort: 2 }).unwrap();
+        assert_eq!(s.groups().unwrap(), vec![Group { id: 7, name: "Store".into(), sort: 2 }]);
+        let mut e = entry("orders", url_source());
+        e.id = 42;
+        e.group_id = Some(7);
+        s.put_entry(&e, 0).unwrap();
+        e.name = "Orders today".into();
+        s.put_entry(&e, 0).unwrap();
+        let got = s.entry(42).unwrap().unwrap();
+        assert_eq!((got.name.as_str(), got.group_id), ("Orders today", Some(7)));
+        assert_eq!(s.entries().unwrap().len(), 1);
+        let a = Alert { id: 9, entry_id: 42, kind: AlertKind::Above, threshold: 5.0, window_s: 3600, enabled: true, last_fired_at: None, notify: true, effect: String::new() };
+        s.put_alert(&a).unwrap();
+        s.put_alert(&Alert { threshold: 8.0, ..a.clone() }).unwrap();
+        let alerts = s.alerts_for(42).unwrap();
+        assert_eq!((alerts.len(), alerts[0].id, alerts[0].threshold), (1, 9, 8.0));
+        assert!(s.put_alert(&Alert { id: 0, ..a }).is_err());
     }
 
     #[test]

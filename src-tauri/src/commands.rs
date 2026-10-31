@@ -114,11 +114,12 @@ pub fn save_entry(app: AppHandle, state: State<AppState>, mut entry: Entry, secr
     if let Ok(view) = rules::build_view(&state.store, saved.clone(), now_ms(), day_start_ms()) {
         let _ = app.emit("core-event", CoreEvent::EntryUpdated { view });
     }
+    crate::sync::changed(&app);
     Ok(saved)
 }
 
 #[tauri::command]
-pub fn delete_entry(state: State<AppState>, id: i64) -> R<()> {
+pub fn delete_entry(app: AppHandle, state: State<AppState>, id: i64) -> R<()> {
     let Some(en) = state.store.entry(id).map_err(e)? else { return Ok(()) };
     let users = formulas_using(&state, &en.slug, id)?;
     if !users.is_empty() {
@@ -129,6 +130,7 @@ pub fn delete_entry(state: State<AppState>, id: i64) -> R<()> {
     for n in en.source.secret_names() {
         let _ = state.secrets.delete(&n);
     }
+    crate::sync::changed(&app);
     Ok(())
 }
 
@@ -136,6 +138,7 @@ pub fn delete_entry(state: State<AppState>, id: i64) -> R<()> {
 pub fn reorder_entries(app: AppHandle, state: State<AppState>, ids: Vec<i64>) -> R<()> {
     state.store.reorder_entries(&ids).map_err(e)?;
     let _ = app.emit("entries-reordered", ids);
+    crate::sync::changed(&app);
     Ok(())
 }
 
@@ -145,14 +148,17 @@ pub fn list_groups(state: State<AppState>) -> R<Vec<Group>> {
 }
 
 #[tauri::command]
-pub fn save_group(state: State<AppState>, group: Group) -> R<Group> {
+pub fn save_group(app: AppHandle, state: State<AppState>, group: Group) -> R<Group> {
     let id = state.store.upsert_group(&group).map_err(e)?;
+    crate::sync::changed(&app);
     Ok(Group { id, name: group.name.trim().to_string(), sort: group.sort })
 }
 
 #[tauri::command]
-pub fn delete_group(state: State<AppState>, id: i64) -> R<()> {
-    state.store.delete_group(id).map_err(e)
+pub fn delete_group(app: AppHandle, state: State<AppState>, id: i64) -> R<()> {
+    state.store.delete_group(id).map_err(e)?;
+    crate::sync::changed(&app);
+    Ok(())
 }
 
 #[tauri::command]
@@ -161,14 +167,17 @@ pub fn list_alerts(state: State<AppState>, entry_id: i64) -> R<Vec<Alert>> {
 }
 
 #[tauri::command]
-pub fn save_alert(state: State<AppState>, alert: Alert) -> R<Alert> {
+pub fn save_alert(app: AppHandle, state: State<AppState>, alert: Alert) -> R<Alert> {
     let id = state.store.upsert_alert(&alert).map_err(e)?;
+    crate::sync::changed(&app);
     Ok(Alert { id, ..alert })
 }
 
 #[tauri::command]
-pub fn delete_alert(state: State<AppState>, id: i64) -> R<()> {
-    state.store.delete_alert(id).map_err(e)
+pub fn delete_alert(app: AppHandle, state: State<AppState>, id: i64) -> R<()> {
+    state.store.delete_alert(id).map_err(e)?;
+    crate::sync::changed(&app);
+    Ok(())
 }
 
 #[tauri::command]
@@ -328,23 +337,66 @@ pub fn get_display(state: State<AppState>) -> DisplayConfig {
 
 #[tauri::command]
 pub fn save_display(app: AppHandle, state: State<AppState>, cfg: DisplayConfig) -> R<DisplayConfig> {
+    let cfg = apply_display(&app, &state, cfg)?;
+    crate::sync::changed(&app);
+    Ok(cfg)
+}
+
+/// Saves the display config and updates every window, the tray, hotkeys and the push endpoint.
+pub(crate) fn apply_display(app: &AppHandle, state: &AppState, cfg: DisplayConfig) -> R<DisplayConfig> {
     let cfg = cfg.sanitized();
     let old = state.display();
-    hotkeys::register(&app, &cfg)?;
+    hotkeys::register(app, &cfg)?;
     if old.launch_at_login != cfg.launch_at_login {
-        crate::set_autostart(&app, cfg.launch_at_login)?;
+        crate::set_autostart(app, cfg.launch_at_login)?;
     }
     cfg.save(&state.store)?;
     state.set_display(cfg.clone());
-    windows::sync(&app, &cfg);
+    windows::sync(app, &cfg);
     if old.hidden != cfg.hidden {
-        windows::set_hidden(&app, &cfg);
+        windows::set_hidden(app, &cfg);
     }
-    windows::replace_all(&app, &cfg);
-    crate::push::start(&app, cfg.push_port, false);
-    crate::refresh_tray(&app);
+    windows::replace_all(app, &cfg);
+    crate::push::start(app, cfg.push_port, false);
+    crate::refresh_tray(app);
     let _ = app.emit("display-changed", &cfg);
     Ok(cfg)
+}
+
+#[tauri::command]
+pub fn sync_info(state: State<AppState>) -> crate::sync::SyncInfo {
+    crate::sync::info(&state.store)
+}
+
+#[tauri::command]
+pub fn set_sync_folder(app: AppHandle, state: State<AppState>, folder: Option<String>) -> R<crate::sync::SyncInfo> {
+    crate::sync::set_folder(&state.store, folder.as_deref())?;
+    crate::sync::set_error(&state.store, None);
+    let info = crate::sync::info(&state.store);
+    if info.pending.is_none() {
+        crate::sync::export(&app)?;
+    }
+    Ok(crate::sync::info(&state.store))
+}
+
+#[tauri::command]
+pub fn sync_export_now(app: AppHandle, state: State<AppState>) -> R<crate::sync::SyncInfo> {
+    if crate::sync::folder(&state.store).is_none() {
+        return Err("choose a sync folder first".into());
+    }
+    crate::sync::export(&app)?;
+    crate::sync::mark_exported(&state.store, now_ms());
+    Ok(crate::sync::info(&state.store))
+}
+
+#[tauri::command]
+pub fn sync_import_now(app: AppHandle) -> R<crate::sync::ImportReport> {
+    crate::sync::import(&app, false)?.ok_or_else(|| "nothing to import".into())
+}
+
+#[tauri::command]
+pub fn sync_dismiss_notice(state: State<AppState>) {
+    crate::sync::clear_notice(&state.store);
 }
 
 #[tauri::command]

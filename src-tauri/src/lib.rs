@@ -7,6 +7,7 @@ mod pixfont;
 mod push;
 mod snapshot;
 mod state;
+mod sync;
 mod tray;
 mod windows;
 
@@ -63,7 +64,7 @@ pub(crate) fn refresh_tray(app: &AppHandle) {
     tray::update(app, view.as_ref(), cfg.tray.show_number);
 }
 
-fn notify(app: &AppHandle, body: &str) {
+pub(crate) fn notify(app: &AppHandle, body: &str) {
     let _ = app.notification().builder().title("Cownter").body(body).show();
 }
 
@@ -136,6 +137,11 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             refresh_tray(&later);
         }
     });
+    let sync_app = handle.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+        sync::check_on_start(&sync_app);
+    });
     let recap_app = handle.clone();
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_secs(20)).await;
@@ -190,6 +196,11 @@ pub fn run() {
             commands::regenerate_push_token,
             commands::restart_push,
             commands::save_display,
+            commands::sync_info,
+            commands::set_sync_folder,
+            commands::sync_export_now,
+            commands::sync_import_now,
+            commands::sync_dismiss_notice,
             commands::platform_info,
             commands::list_monitors,
             commands::quit_app,

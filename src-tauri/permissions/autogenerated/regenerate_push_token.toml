@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-regenerate-push-token"
+description = "Enables the regenerate_push_token command without any pre-configured scope."
+commands.allow = ["regenerate_push_token"]
+
+[[permission]]
+identifier = "deny-regenerate-push-token"
+description = "Denies the regenerate_push_token command without any pre-configured scope."
+commands.deny = ["regenerate_push_token"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-widget-hit"
+description = "Enables the widget_hit command without any pre-configured scope."
+commands.allow = ["widget_hit"]
+
+[[permission]]
+identifier = "deny-widget-hit"
+description = "Denies the widget_hit command without any pre-configured scope."
+commands.deny = ["widget_hit"]

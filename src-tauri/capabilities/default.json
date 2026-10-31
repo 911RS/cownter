@@ -36,6 +36,7 @@
     "allow-get-display",
     "allow-widget-resize",
     "allow-widget-done",
+    "allow-widget-hit",
     "allow-open-settings",
     "allow-refresh-all",
     "allow-weekly-recap"

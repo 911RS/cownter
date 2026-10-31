@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-sync-info"
+description = "Enables the sync_info command without any pre-configured scope."
+commands.allow = ["sync_info"]
+
+[[permission]]
+identifier = "deny-sync-info"
+description = "Denies the sync_info command without any pre-configured scope."
+commands.deny = ["sync_info"]

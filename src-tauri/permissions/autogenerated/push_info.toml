@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-push-info"
+description = "Enables the push_info command without any pre-configured scope."
+commands.allow = ["push_info"]
+
+[[permission]]
+identifier = "deny-push-info"
+description = "Denies the push_info command without any pre-configured scope."
+commands.deny = ["push_info"]

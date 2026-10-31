@@ -33,6 +33,7 @@ export const api = {
   weeklyRecap: () => invoke<Recap>("weekly_recap"),
   showRecap: () => invoke<void>("show_recap"),
   saveSnapshot: (name: string, png: string) => invoke<string>("save_snapshot", { name, png }),
+  exportCsv: (entryId: number | null) => invoke<string>("export_csv", { entryId }),
   keyringAvailable: () => invoke<boolean>("keyring_available"),
   hasSecrets: (names: string[]) => invoke<boolean[]>("has_secrets", { names }),
   pushInfo: () => invoke<PushInfo>("push_info"),

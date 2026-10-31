@@ -14,6 +14,9 @@ Usage:
   cownter add <entry> [amount]  Add to a Push number (default 1, can be negative)
   cownter get <entry>           Print the current value of any number
   cownter list                  List every number with its value
+  cownter export [entry] [--out <file>]
+                                Print the history of one number (or all) as CSV,
+                                or write it to <file>
   cownter --help                Show this help
 
 <entry> is the number's name, short name or id.
@@ -28,6 +31,7 @@ pub enum Cmd {
     Add { entry: String, by: f64 },
     Get { entry: String },
     List,
+    Export { entry: Option<String>, out: Option<String> },
 }
 
 const USAGE: &str = "run `cownter --help` for usage";
@@ -59,8 +63,33 @@ pub fn parse(args: &[String]) -> Option<Result<Cmd, String>> {
             [] => Ok(Cmd::List),
             _ => wrong("list"),
         },
+        "export" => parse_export(rest),
         _ => return None,
     })
+}
+
+fn parse_export(rest: &[String]) -> Result<Cmd, String> {
+    let usage = || Err("usage: cownter export [entry] [--out <file>]".to_string());
+    let (mut entry, mut out) = (None, None);
+    let mut it = rest.iter();
+    while let Some(a) = it.next() {
+        if a == "--out" || a == "-o" {
+            match it.next() {
+                Some(p) if out.is_none() => out = Some(p.clone()),
+                _ => return usage(),
+            }
+        } else if let Some(p) = a.strip_prefix("--out=") {
+            if out.is_some() || p.is_empty() {
+                return usage();
+            }
+            out = Some(p.to_string());
+        } else if entry.is_none() && !a.starts_with('-') {
+            entry = Some(a.clone());
+        } else {
+            return usage();
+        }
+    }
+    Ok(Cmd::Export { entry, out })
 }
 
 fn fmt_num(v: f64) -> String {
@@ -116,6 +145,19 @@ fn request(method: &str, path: &str, body: Option<Value>) -> Result<Value, Strin
     }
 }
 
+fn request_csv(path: &str) -> Result<String, String> {
+    let (port, token) = connection()?;
+    let (status, out) = push::call_text(port, &token, path).map_err(|e| match e {
+        ClientError::NotRunning => "Cownter isn't running".to_string(),
+        other => other.to_string(),
+    })?;
+    if status == 200 {
+        return Ok(out);
+    }
+    let err = serde_json::from_str::<Value>(&out).ok().and_then(|v| v["error"].as_str().map(str::to_string));
+    Err(err.unwrap_or_else(|| format!("Cownter answered HTTP {status}")))
+}
+
 fn exec(cmd: Cmd) -> Result<String, String> {
     match cmd {
         Cmd::Help => Ok(HELP.into()),
@@ -131,6 +173,20 @@ fn exec(cmd: Cmd) -> Result<String, String> {
         Cmd::List => {
             let out = request("GET", "/v1/list", None)?;
             Ok(table(out["entries"].as_array().map(Vec::as_slice).unwrap_or(&[])))
+        }
+        Cmd::Export { entry, out } => {
+            let path = match &entry {
+                Some(e) => format!("/v1/export?entry={}", push::encode_query(e)),
+                None => "/v1/export".into(),
+            };
+            let csv = request_csv(&path)?;
+            match out {
+                Some(file) => {
+                    std::fs::write(&file, csv).map_err(|e| format!("could not write {file}: {e}"))?;
+                    Ok(format!("Saved to {file}"))
+                }
+                None => Ok(csv.trim_end_matches('\n').to_string()),
+            }
         }
     }
 }
@@ -169,6 +225,13 @@ mod tests {
         assert_eq!(p(&["get", "Orders today"]), Some(Ok(Cmd::Get { entry: "Orders today".into() })));
         assert_eq!(p(&["list"]), Some(Ok(Cmd::List)));
         assert_eq!(p(&["--help"]), Some(Ok(Cmd::Help)));
+        assert_eq!(p(&["export"]), Some(Ok(Cmd::Export { entry: None, out: None })));
+        assert_eq!(p(&["export", "Orders"]), Some(Ok(Cmd::Export { entry: Some("Orders".into()), out: None })));
+        assert_eq!(
+            p(&["export", "--out", "a.csv", "Orders"]),
+            Some(Ok(Cmd::Export { entry: Some("Orders".into()), out: Some("a.csv".into()) }))
+        );
+        assert_eq!(p(&["export", "--out=b.csv"]), Some(Ok(Cmd::Export { entry: None, out: Some("b.csv".into()) })));
     }
 
     #[test]
@@ -184,6 +247,9 @@ mod tests {
         assert!(p(&["add", "Orders", "lots"]).unwrap().unwrap_err().contains("not a number"));
         assert!(p(&["get"]).unwrap().is_err());
         assert!(p(&["list", "x"]).unwrap().is_err());
+        assert!(p(&["export", "--out"]).unwrap().is_err());
+        assert!(p(&["export", "a", "b"]).unwrap().is_err());
+        assert!(p(&["export", "--json"]).unwrap().is_err());
     }
 
     #[test]

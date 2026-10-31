@@ -258,7 +258,22 @@ pub fn save_snapshot(app: AppHandle, name: String, png: String) -> R<String> {
     let bytes = crate::snapshot::decode(&png)?;
     let dir = app.path().picture_dir().or_else(|_| app.path().home_dir().map(|h| h.join("Pictures"))).map_err(e)?;
     let date = chrono::Local::now().format("%Y-%m-%d").to_string();
-    let path = crate::snapshot::write(&dir, &name, &date, &bytes)?;
+    let path = crate::snapshot::write(&dir, &name, &date, "png", &bytes)?;
+    Ok(path.display().to_string())
+}
+
+/// Writes the history of one entry, or of all entries, as CSV to the Downloads folder and returns the file path.
+#[tauri::command]
+pub fn export_csv(app: AppHandle, state: State<AppState>, entry_id: Option<i64>) -> R<String> {
+    let entries = match entry_id {
+        Some(id) => vec![state.store.entry(id).map_err(e)?.ok_or("this number no longer exists")?],
+        None => state.store.entries().map_err(e)?,
+    };
+    let csv = cownter_core::export::entries_csv(&state.store, &entries).map_err(e)?;
+    let label = if entry_id.is_some() { entries[0].name.as_str() } else { "all" };
+    let dir = app.path().download_dir().or_else(|_| app.path().home_dir()).map_err(e)?;
+    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let path = crate::snapshot::write(&dir, label, &date, "csv", csv.as_bytes())?;
     Ok(path.display().to_string())
 }
 

@@ -38,6 +38,7 @@
     "allow-list-monitors",
     "allow-weekly-recap",
     "allow-show-recap",
-    "allow-save-snapshot"
+    "allow-save-snapshot",
+    "allow-export-csv"
   ]
 }

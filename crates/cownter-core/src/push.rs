@@ -80,21 +80,30 @@ impl Request {
 pub struct Response {
     pub status: u16,
     pub body: Value,
+    /// Sent as `text/csv` instead of the JSON body when set.
+    pub csv: Option<String>,
 }
 
 impl Response {
     pub fn ok(body: Value) -> Response {
-        Response { status: 200, body }
+        Response { status: 200, body, csv: None }
     }
 
     pub fn err(status: u16, msg: impl Into<String>) -> Response {
-        Response { status, body: json!({ "error": msg.into() }) }
+        Response { status, body: json!({ "error": msg.into() }), csv: None }
+    }
+
+    pub fn csv(text: String) -> Response {
+        Response { status: 200, body: Value::Null, csv: Some(text) }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        let body = self.body.to_string();
+        let (kind, body) = match &self.csv {
+            Some(t) => ("text/csv; charset=utf-8", t.clone()),
+            None => ("application/json", self.body.to_string()),
+        };
         format!(
-            "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n{}",
+            "HTTP/1.1 {} {}\r\nContent-Type: {kind}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\n\r\n{}",
             self.status,
             reason(self.status),
             body.len(),
@@ -255,8 +264,8 @@ fn internal(e: impl std::fmt::Display) -> Response {
 }
 
 pub fn handle(ctx: &Ctx, req: &Request) -> Response {
-    if !matches!(req.path.as_str(), "/v1/set" | "/v1/add" | "/v1/get" | "/v1/list") {
-        return Response::err(404, "unknown endpoint; use /v1/set, /v1/add, /v1/get or /v1/list");
+    if !matches!(req.path.as_str(), "/v1/set" | "/v1/add" | "/v1/get" | "/v1/list" | "/v1/export") {
+        return Response::err(404, "unknown endpoint; use /v1/set, /v1/add, /v1/get, /v1/list or /v1/export");
     }
     if !ctx.authorized(req) {
         return Response::err(401, "missing or wrong token; send Authorization: Bearer <token>");
@@ -266,6 +275,7 @@ pub fn handle(ctx: &Ctx, req: &Request) -> Response {
         ("POST", "/v1/add") => add(ctx, req),
         ("GET", "/v1/get") => get(ctx, req),
         ("GET", "/v1/list") => list(ctx),
+        ("GET", "/v1/export") => export(ctx, req),
         _ => Err(Response::err(405, "method not allowed")),
     };
     res.unwrap_or_else(|e| e)
@@ -407,6 +417,14 @@ fn list(ctx: &Ctx) -> Res {
     Ok(Response::ok(json!({ "entries": items })))
 }
 
+fn export(ctx: &Ctx, req: &Request) -> Res {
+    let entries = match req.query("entry").map(str::trim).filter(|k| !k.is_empty()) {
+        Some(key) => vec![find_entry(&ctx.store, key)?],
+        None => ctx.store.entries().map_err(internal)?,
+    };
+    Ok(Response::csv(crate::export::entries_csv(&ctx.store, &entries).map_err(internal)?))
+}
+
 /// Binds the push endpoint on 127.0.0.1 only.
 pub fn bind(port: u16) -> Result<std::net::TcpListener, String> {
     let l = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, port)).map_err(|e| match e.kind() {
@@ -473,6 +491,17 @@ pub enum ClientError {
 
 /// Sends one request to the local endpoint and returns the status and JSON body.
 pub fn call(port: u16, token: &str, method: &str, path: &str, body: Option<&Value>) -> Result<(u16, Value), ClientError> {
+    parse_response(&exchange(port, token, method, path, body)?)
+}
+
+/// Sends a GET to the local endpoint and returns the status and the body as text.
+pub fn call_text(port: u16, token: &str, path: &str) -> Result<(u16, String), ClientError> {
+    let raw = exchange(port, token, "GET", path, None)?;
+    let (status, body) = split_response(&raw)?;
+    Ok((status, String::from_utf8_lossy(body).into_owned()))
+}
+
+fn exchange(port: u16, token: &str, method: &str, path: &str, body: Option<&Value>) -> Result<Vec<u8>, ClientError> {
     let addr = SocketAddr::from((Ipv4Addr::LOCALHOST, port));
     let mut s = TcpStream::connect_timeout(&addr, Duration::from_secs(3)).map_err(|e| match e.kind() {
         ErrorKind::ConnectionRefused => ClientError::NotRunning,
@@ -494,10 +523,15 @@ pub fn call(port: u16, token: &str, method: &str, path: &str, body: Option<&Valu
     s.write_all(req.as_bytes()).map_err(io)?;
     let mut out = Vec::new();
     s.read_to_end(&mut out).map_err(io)?;
-    parse_response(&out)
+    Ok(out)
 }
 
 pub fn parse_response(raw: &[u8]) -> Result<(u16, Value), ClientError> {
+    let (status, body) = split_response(raw)?;
+    Ok((status, serde_json::from_slice(body).unwrap_or(Value::Null)))
+}
+
+fn split_response(raw: &[u8]) -> Result<(u16, &[u8]), ClientError> {
     let invalid = || ClientError::Failed("got an answer that is not from Cownter; check the port".into());
     let end = find(raw, b"\r\n\r\n").ok_or_else(invalid)?;
     let head = String::from_utf8_lossy(&raw[..end]);
@@ -505,8 +539,7 @@ pub fn parse_response(raw: &[u8]) -> Result<(u16, Value), ClientError> {
         return Err(invalid());
     }
     let status = head.split(' ').nth(1).and_then(|s| s.parse::<u16>().ok()).ok_or_else(invalid)?;
-    let body = serde_json::from_slice(&raw[end + 4..]).unwrap_or(Value::Null);
-    Ok((status, body))
+    Ok((status, &raw[end + 4..]))
 }
 
 #[cfg(test)]
@@ -662,6 +695,26 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn exports_csv() {
+        let (ctx, _rx) = setup();
+        let mut e = entry("eu", SourceCfg::Push);
+        e.name = "Sales, \"EU\"".into();
+        ctx.store.insert_entry(&e, 0).unwrap();
+        handle(&ctx, &post("/v1/set", json!({"entry": "Orders", "value": 3})));
+        handle(&ctx, &post("/v1/set", json!({"entry": "eu", "value": 1.5})));
+        let one = handle(&ctx, &req("GET", "/v1/export?entry=orders", Some(TOKEN), ""));
+        let text = one.csv.clone().unwrap();
+        assert_eq!(one.status, 200);
+        assert!(text.starts_with("entry,timestamp,value\nOrders,") && text.ends_with(",3\n"), "{text}");
+        assert!(String::from_utf8(one.to_bytes()).unwrap().contains("Content-Type: text/csv"));
+        let all = handle(&ctx, &req("GET", "/v1/export", Some(TOKEN), "")).csv.unwrap();
+        assert_eq!(all.lines().count(), 3);
+        assert!(all.lines().nth(2).unwrap().starts_with("\"Sales, \"\"EU\"\"\","));
+        assert_eq!(handle(&ctx, &req("GET", "/v1/export?entry=nope", Some(TOKEN), "")).status, 404);
+        assert_eq!(handle(&ctx, &req("GET", "/v1/export", Some("bad"), "")).status, 401);
+    }
+
+    #[tokio::test]
     async fn duplicate_names_need_a_slug() {
         let (ctx, _rx) = setup();
         let mut e = entry("orders2", SourceCfg::Push);
@@ -678,15 +731,18 @@ mod tests {
         let port = listener.local_addr().unwrap().port();
         assert!(bind(port).unwrap_err().contains("already in use"));
         let server = tokio::spawn(serve(listener, ctx.clone()));
-        let (set, get, bad) = tokio::task::spawn_blocking(move || {
+        let (set, get, bad, csv) = tokio::task::spawn_blocking(move || {
             (
                 call(port, TOKEN, "POST", "/v1/set", Some(&json!({"entry": "Orders", "value": 7}))).unwrap(),
                 call(port, TOKEN, "GET", &format!("/v1/get?entry={}", encode_query("Orders")), None).unwrap(),
                 call(port, "wrong", "GET", "/v1/list", None).unwrap(),
+                call_text(port, TOKEN, "/v1/export").unwrap(),
             )
         })
         .await
         .unwrap();
+        assert_eq!(csv.0, 200);
+        assert!(csv.1.starts_with("entry,timestamp,value\nOrders,") && csv.1.ends_with(",7\n"));
         assert_eq!((set.0, set.1["value"].clone()), (200, json!(7.0)));
         assert_eq!(get.1["value"], json!(7.0));
         assert_eq!(bad.0, 401);

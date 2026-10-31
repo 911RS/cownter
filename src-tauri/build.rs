@@ -22,6 +22,7 @@ const COMMANDS: &[&str] = &[
     "weekly_recap",
     "show_recap",
     "save_snapshot",
+    "export_csv",
     "keyring_available",
     "has_secrets",
     "save_display",

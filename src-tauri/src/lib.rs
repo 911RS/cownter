@@ -183,6 +183,7 @@ pub fn run() {
             commands::weekly_recap,
             commands::show_recap,
             commands::save_snapshot,
+            commands::export_csv,
             commands::keyring_available,
             commands::has_secrets,
             commands::push_info,

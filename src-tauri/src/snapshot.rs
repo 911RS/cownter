@@ -21,10 +21,10 @@ fn slug(name: &str) -> String {
     if out.is_empty() { "number".into() } else { out.into() }
 }
 
-/// `cownter-<name>-<date>.png`, with `-<n>` before the extension when `n > 1`.
-pub fn file_name(name: &str, date: &str, n: u32) -> String {
+/// `cownter-<name>-<date>.<ext>`, with `-<n>` before the extension when `n > 1`.
+pub fn file_name(name: &str, date: &str, n: u32, ext: &str) -> String {
     let base = format!("cownter-{}-{date}", slug(name));
-    if n > 1 { format!("{base}-{n}.png") } else { format!("{base}.png") }
+    if n > 1 { format!("{base}-{n}.{ext}") } else { format!("{base}.{ext}") }
 }
 
 /// Decodes a base64 PNG, with or without a `data:` prefix.
@@ -40,11 +40,11 @@ pub fn decode(png: &str) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
-/// Writes the PNG into `dir` under a name that does not exist yet and returns its path.
-pub fn write(dir: &Path, name: &str, date: &str, bytes: &[u8]) -> Result<PathBuf, String> {
+/// Writes the file into `dir` under a name that does not exist yet and returns its path.
+pub fn write(dir: &Path, name: &str, date: &str, ext: &str, bytes: &[u8]) -> Result<PathBuf, String> {
     std::fs::create_dir_all(dir).map_err(|e| format!("could not create {}: {e}", dir.display()))?;
     for n in 1..1000 {
-        let path = dir.join(file_name(name, date, n));
+        let path = dir.join(file_name(name, date, n, ext));
         match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
             Ok(mut f) => {
                 use std::io::Write;
@@ -55,7 +55,7 @@ pub fn write(dir: &Path, name: &str, date: &str, bytes: &[u8]) -> Result<PathBuf
             Err(e) => return Err(format!("could not write {}: {e}", path.display())),
         }
     }
-    Err("too many snapshots with this name today".into())
+    Err("too many files with this name today".into())
 }
 
 #[cfg(test)]
@@ -64,10 +64,11 @@ mod tests {
 
     #[test]
     fn names_are_safe() {
-        assert_eq!(file_name("GitHub stars", "2026-10-31", 1), "cownter-github-stars-2026-10-31.png");
-        assert_eq!(file_name("../../etc/passwd", "2026-10-31", 1), "cownter-etc-passwd-2026-10-31.png");
-        assert_eq!(file_name("🐄", "2026-10-31", 3), "cownter-number-2026-10-31-3.png");
-        assert_eq!(file_name(&"x".repeat(90), "d", 1).len(), "cownter--d.png".len() + 40);
+        assert_eq!(file_name("GitHub stars", "2026-10-31", 1, "png"), "cownter-github-stars-2026-10-31.png");
+        assert_eq!(file_name("../../etc/passwd", "2026-10-31", 1, "png"), "cownter-etc-passwd-2026-10-31.png");
+        assert_eq!(file_name("🐄", "2026-10-31", 3, "png"), "cownter-number-2026-10-31-3.png");
+        assert_eq!(file_name(&"x".repeat(90), "d", 1, "png").len(), "cownter--d.png".len() + 40);
+        assert_eq!(file_name("all", "2026-10-31", 2, "csv"), "cownter-all-2026-10-31-2.csv");
     }
 
     #[test]
@@ -83,8 +84,8 @@ mod tests {
     fn never_overwrites() {
         let dir = std::env::temp_dir().join(format!("cownter-snap-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
-        let a = write(&dir, "Stars", "2026-10-31", b"one").unwrap();
-        let b = write(&dir, "Stars", "2026-10-31", b"two").unwrap();
+        let a = write(&dir, "Stars", "2026-10-31", "png", b"one").unwrap();
+        let b = write(&dir, "Stars", "2026-10-31", "png", b"two").unwrap();
         assert_eq!(a.file_name().unwrap(), "cownter-stars-2026-10-31.png");
         assert_eq!(b.file_name().unwrap(), "cownter-stars-2026-10-31-2.png");
         assert_eq!(std::fs::read(&a).unwrap(), b"one");

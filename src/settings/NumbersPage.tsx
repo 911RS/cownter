@@ -32,6 +32,7 @@ export function NumbersPage({
   const [filter, setFilter] = useState<number | "all">("all");
   const [newGroup, setNewGroup] = useState<string | null>(null);
   const [err, setErr] = useState("");
+  const [note, setNote] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [sharing, setSharing] = useState<number | null>(null);
   const shared = sharing === null ? undefined : views.find((v) => v.entry.id === sharing);
   const sorted = [...views].sort((a, b) => a.entry.sort - b.entry.sort || a.entry.id - b.entry.id);
@@ -57,6 +58,15 @@ export function NumbersPage({
     }
   };
 
+  const exportCsv = async (entryId: number | null) => {
+    try {
+      const path = await api.exportCsv(entryId);
+      setNote({ kind: "ok", text: `Saved to ${path}` });
+    } catch (e) {
+      setNote({ kind: "error", text: errorText(e) });
+    }
+  };
+
   const removeGroup = async (id: number) => {
     await api.deleteGroup(id).catch((e) => setErr(errorText(e)));
     if (filter === id) setFilter("all");
@@ -73,6 +83,11 @@ export function NumbersPage({
               <path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7" />
             </svg>
           </button>
+          {views.length > 0 && (
+            <button type="button" className="btn ghost" title="Save the history of every number as a CSV file" onClick={() => exportCsv(null)}>
+              Export CSV
+            </button>
+          )}
           <button type="button" className="btn primary" onClick={() => onEdit(blankEntry())}>
             + Add
           </button>
@@ -138,6 +153,7 @@ export function NumbersPage({
       </div>
 
       {err && <Banner kind="error">{err}</Banner>}
+      {note && <Banner kind={note.kind}>{note.text}</Banner>}
 
       <div className="entries">
         {list.length === 0 && views.length > 0 && <p className="muted pad">No numbers in this group yet.</p>}
@@ -198,6 +214,21 @@ export function NumbersPage({
             >
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="icon-btn share-btn"
+              title="Export CSV"
+              aria-label={`Export ${v.entry.name} as CSV`}
+              onClick={(e) => {
+                e.stopPropagation();
+                exportCsv(v.entry.id);
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 4v11M7 10.5l5 5 5-5M4 20h16" />
               </svg>
             </button>
           </div>

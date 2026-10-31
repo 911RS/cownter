@@ -93,7 +93,7 @@ You keep a browser tab open just to watch one number. Cownter puts that number o
 
 | Pop-up on change | Change feed | Quick peek |
 | --- | --- | --- |
-| ![Pop-up on change](docs/screenshots/form-pop.png) | ![Change feed](docs/screenshots/form-feed.png) | ![Quick peek](docs/screenshots/form-peek.png) |
+| ![Pop-up on change](docs/screenshots/form-popup.png) | ![Change feed](docs/screenshots/form-feed.png) | ![Quick peek](docs/screenshots/form-peek.png) |
 
 ## On-screen styles
 

@@ -2,6 +2,10 @@
   <img src="docs/screenshots/cownter-banner-2.png" alt="Cownter: the numbers you care about, always in view. A tiny desktop widget that polls any API and puts the number on your screen." width="100%">
 </p>
 
+<p align="center">
+  <img src="assets/branding/cownter-symbol.png" alt="" width="64">
+</p>
+
 <h3 align="center">The numbers you care about, always in view.</h3>
 
 <p align="center">
@@ -28,8 +32,12 @@
 - [Goals, sounds and celebrations](#goals-sounds-and-celebrations)
 - [Alerts and effects](#alerts-and-effects)
 - [Formulas](#formulas)
+- [Share and export](#share-and-export)
+- [Push and command line](#push-and-command-line)
+- [Sync between computers](#sync-between-computers)
 - [Shortcuts and the tray](#shortcuts-and-the-tray)
 - [Install](#install)
+- [Updates](#updates)
 - [Build from source](#build-from-source)
 - [How it works](#how-it-works)
 - [Privacy](#privacy)
@@ -39,14 +47,18 @@
 
 You keep a browser tab open just to watch one number. Cownter puts that number on your desktop in a widget the size of a notification. It refreshes on its own schedule, keeps a history, and tells you when something moves.
 
-- **Any source.** YouTube, GitHub, Shopify, Stripe, or any URL that returns JSON, HTML or plain text. Click the value you want in a live preview of the response.
+- **Any source.** YouTube, GitHub, Shopify, Stripe, Plausible, npm, Gumroad, Lemon Squeezy, Product Hunt, Discord, or any URL that returns JSON, HTML or plain text. Click the value you want in a live preview of the response.
+- **Push instead of poll.** Send a number from a script, a webhook or the `cownter` command line and it updates at once.
 - **Numbers or text.** Track a count, or a text such as an order status, a build state or a version number.
 - **26 on-screen styles.** From a calm pill at the top of the screen to a train that drives along your taskbar.
 - **22 digit looks.** 19 font families plus dot-matrix, calculator and neon, in eight colours including an RGB chroma wave.
 - **Alerts with effects.** Float a +1 over the widget, throw confetti, shake it, flash it, or send a desktop notification.
-- **Goals and records.** A progress bar to your goal, confetti when you reach it, and a soft sound if you like.
+- **Goals and records.** A progress bar to your goal, a forecast of the day you'll reach it, streaks of days going up, and confetti when you get there.
+- **Weekly recap.** Every Monday, a card with each number's week and its best day.
+- **Share and export.** Turn a number into a PNG card, or export its history as CSV.
 - **History.** Sparklines and today's change for every number. A year of data is kept, then compacted.
 - **Private by design.** No account, no server, no telemetry. Keys and tokens live in your system keyring.
+- **Updates itself.** New releases install from GitHub with one click.
 
 ## Screenshots
 
@@ -184,6 +196,13 @@ All fonts are bundled with the app, so they look the same on every system and ne
 | GitHub | Stars, forks, watchers, open issues, followers, public repos | Nothing (a token raises the rate limit) |
 | Shopify | Orders today | An Admin API access token |
 | Stripe | Revenue today, refunds subtracted | A restricted key with read access to charges |
+| Plausible | Visitors today, visitors right now | A Plausible API key |
+| npm | Downloads in the last 7 days | Nothing |
+| Gumroad | Sales, revenue | An access token |
+| Lemon Squeezy | Sales, revenue, revenue in the last 30 days | An API key |
+| Product Hunt | Upvotes on a post | A developer token |
+| Discord | Members, members online | An invite code, nothing else |
+| Push | Whatever you send it | Nothing (see [Push and command line](#push-and-command-line)) |
 | Formula | Math on your other numbers | Nothing |
 
 - Each number has its own refresh interval, from 10 seconds up.
@@ -195,7 +214,13 @@ All fonts are bundled with the app, so they look the same on every system and ne
 ## Goals, sounds and celebrations
 
 - Set a goal for any number. Styles show a progress bar, and Cownter celebrates with confetti when you reach it or set a new all-time high.
+- **Forecast.** From the last 30 days of history, Cownter estimates the day you'll reach the goal: `153 to go · ~Nov 12`.
+- **Streaks.** `🔥 5` means the number ended higher than the day before, five days in a row.
+- **Weekly recap.** On the day you choose (Monday by default), a card shows each number's change over the week and its best day. Turn it off or show it now under **General → Weekly recap**, or from the tray.
 - Seven soft built-in sounds: chime, bubble, soft tick, pop, marimba, glass bell and sparkle. Pick one for "on every change" and one for "on goal or record", with a master volume and a mute switch.
+- **Sound packs.** Swap the whole set for Cash register, Crowd cheer, Arcade or Cowbell, for everything or for one number.
+- **Pet.** The pet style grows from an egg to a crowned cow as the number climbs toward its goal.
+- **Seasonal touches.** Optional Halloween, Christmas and New Year colours, under **On screen → Seasons**.
 - **Try it** in the number editor records a fake reading, so you can preview animations, sounds, alerts and confetti before they happen for real.
 
 ## Alerts and effects
@@ -213,10 +238,12 @@ Alerts are written as a sentence: **When it** *goes up by 1* **then show** *Conf
 | goes above N | the number crosses above N |
 | goes below N | the number crosses below N |
 | changes by N % | the number moves by N % within 15 minutes, an hour, 6 hours, a day or a week |
+| rises by N % | the number climbs N % above its lowest point in the window |
+| drops by N % | the number falls N % below its highest point in the window |
 
 **Effects on the widget:** float up, bubble, burst, confetti, rain, zoom, shake, glow and flash. Each one shows the real change, such as `+1` or `-3`, in green or red. A live preview plays the effect as you pick it.
 
-**Quick add:** one click for "+1 on every new one", "Celebrate +100", "Warn on a drop" or "Big swing".
+**Quick add:** one click for "+1 on every new one", "Celebrate +100", "Warn on a drop", "Big swing" or "Sudden 5% drop".
 
 **Checks:** the designer warns you when an alert does nothing, duplicates another one, or is already past its line.
 
@@ -230,6 +257,35 @@ youtube_subscribers + github_followers
 ```
 
 Formulas recalculate on their own refresh timer (10 seconds or longer). Cownter rejects loops (a formula that uses itself) and won't let you rename a number that a formula still uses.
+
+## Share and export
+
+- **Snapshot.** Hover a number in the Numbers list and click the share icon for a PNG card with the value, today's change, a sparkline, the streak and the goal. Copy it or save it to `~/Pictures`.
+- **CSV.** Export one number or all of them from the Numbers page. Files go to `~/Downloads` and are never overwritten.
+
+## Push and command line
+
+Pick **Push** as the source and the number waits for you to send it values. Cownter listens on `127.0.0.1:47615` only, with a token you'll find under **General → Push and command line**.
+
+```sh
+cownter set "Orders" 42
+cownter add "Orders" 1
+cownter get "Orders"
+cownter list
+cownter export "Orders" --out orders.csv
+```
+
+```sh
+curl -X POST http://127.0.0.1:47615/v1/add \
+  -H "Authorization: Bearer <token>" \
+  -d '{"entry": "Orders", "by": 1}'
+```
+
+The full endpoint reference is in [docs/push-and-cli.md](docs/push-and-cli.md).
+
+## Sync between computers
+
+Under **General → Sync settings**, point each computer at the same synced folder (Syncthing, Dropbox, iCloud Drive). Numbers, groups, alerts and the on-screen setup are shared through one `cownter-settings.json` file. Keys and tokens stay in each computer's keyring and are never written to it.
 
 ## Shortcuts and the tray
 
@@ -257,6 +313,10 @@ The installers are not code-signed yet:
 - **Windows:** SmartScreen may warn you. Click **More info**, then **Run anyway**.
 - **macOS:** right-click the app, choose **Open**, then confirm.
 - **Linux:** make the AppImage executable with `chmod +x Cownter_*.AppImage`. On Wayland, Cownter runs through XWayland so widgets can be placed precisely.
+
+## Updates
+
+From version 0.2.2, Cownter checks GitHub for a new release when it starts and every 6 hours, and tells you when one is ready. Install it under **General → Updates**; Cownter restarts on the new version. On Linux, the `.deb` and `.rpm` updates ask for your password. Updates are signed, and the check can be turned off.
 
 ## Build from source
 
@@ -300,11 +360,12 @@ src                   React UI: settings window, on-screen styles, digit looks, 
 - Readings go into a local SQLite database.
 - Rules turn new readings into events: changes, alerts, goals and all-time highs.
 - The shell forwards those events to small transparent, always-on-top windows.
-- Each window is sized to its content, so the rest of your screen stays clickable.
+- Each window is sized to its content, so the rest of your screen stays clickable. Styles that expand on hover keep their open size and only the visible panel takes clicks, so they grow smoothly without resizing the window.
 
 ## Privacy
 
-- Cownter only contacts the addresses you add.
+- Cownter only contacts the addresses you add, plus GitHub to check for updates (you can turn that off).
+- The push endpoint listens on `127.0.0.1` only and needs a token.
 - History is stored in a local database in your app data folder.
 - API keys and tokens are stored only in your system's keyring (Keychain, Credential Manager or Secret Service), never in Cownter's own files.
 - No account, no analytics, no crash reporting.

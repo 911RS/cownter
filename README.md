@@ -2,6 +2,13 @@
   <img src="docs/screenshots/cownter-banner-2.png" alt="Cownter: the numbers you care about, always in view. A tiny desktop widget that polls any API and puts the number on your screen." width="100%">
 </p>
 
+<h3 align="center">The numbers you care about, always in view.</h3>
+
+<p align="center">
+  A tiny desktop widget that polls any API and puts the number on your screen.<br>
+  Subscribers, stars, orders, revenue, or any URL you paste.
+</p>
+
 <p align="center">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-0a43ff"></a>
   <a href="../../releases"><img alt="Download" src="https://img.shields.io/badge/download-Windows%20%7C%20macOS%20%7C%20Linux-22262d"></a>

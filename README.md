@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/hero.png" alt="The island widget" width="620">
+  <img src="docs/screenshots/hero-scene.png" alt="Cownter widgets on a desktop" width="820">
 </p>
 
 ## Contents
@@ -65,35 +65,35 @@ You keep a browser tab open just to watch one number. Cownter puts that number o
 
 | Island | Floating bar | Taskbar pills |
 | --- | --- | --- |
-| ![Island](docs/screenshots/form-island.png) | ![Floating bar](docs/screenshots/form-bar.png) | ![Taskbar pills](docs/screenshots/form-pills.png) |
+| ![Island](docs/screenshots/style-island.png) | ![Floating bar](docs/screenshots/style-bar.png) | ![Taskbar pills](docs/screenshots/style-pills.png) |
 | **Corner orb** | **Ticker** | **Trend bar** |
-| ![Corner orb](docs/screenshots/form-orb.png) | ![Ticker](docs/screenshots/form-ticker.png) | ![Trend bar](docs/screenshots/form-trend.png) |
+| ![Corner orb](docs/screenshots/style-orb.png) | ![Ticker](docs/screenshots/style-ticker.png) | ![Trend bar](docs/screenshots/style-trend.png) |
 | **Sticky chips** | **Versus** | **Stream overlay** |
-| ![Sticky chips](docs/screenshots/form-chips.png) | ![Versus](docs/screenshots/form-versus.png) | ![Stream overlay](docs/screenshots/form-stream.png) |
+| ![Sticky chips](docs/screenshots/style-chips.png) | ![Versus](docs/screenshots/style-versus.png) | ![Stream overlay](docs/screenshots/style-stream.png) |
 
 **Attached to an edge**
 
 | Edge tab | Pull-out drawer | Welded notch |
 | --- | --- | --- |
-| ![Edge tab](docs/screenshots/form-edge.png) | ![Pull-out drawer](docs/screenshots/form-drawer.png) | ![Welded notch](docs/screenshots/form-notch.png) |
+| ![Edge tab](docs/screenshots/style-edge.png) | ![Pull-out drawer](docs/screenshots/style-drawer.png) | ![Welded notch](docs/screenshots/style-notch.png) |
 | **Notch wings** | **Top tabs** | **Folder tabs** |
-| ![Notch wings](docs/screenshots/form-wings.png) | ![Top tabs](docs/screenshots/form-toptabs.png) | ![Folder tabs](docs/screenshots/form-folders.png) |
+| ![Notch wings](docs/screenshots/style-wings.png) | ![Top tabs](docs/screenshots/style-toptabs.png) | ![Folder tabs](docs/screenshots/style-folders.png) |
 | **Taskbar deck** |   |   |
-| ![Taskbar deck](docs/screenshots/form-deck.png) |   |   |
+| ![Taskbar deck](docs/screenshots/style-deck.png) |   |   |
 
 **Playful**
 
 | Hanging tag | Clothesline | Train |
 | --- | --- | --- |
-| ![Hanging tag](docs/screenshots/form-tag.png) | ![Clothesline](docs/screenshots/form-clothesline.png) | ![Train](docs/screenshots/form-train.png) |
+| ![Hanging tag](docs/screenshots/style-tag.png) | ![Clothesline](docs/screenshots/style-clothesline.png) | ![Train](docs/screenshots/style-train.png) |
 | **Desktop pet** | **Pager** |   |
-| ![Desktop pet](docs/screenshots/form-pet.png) | ![Pager](docs/screenshots/form-pager.png) |   |
+| ![Desktop pet](docs/screenshots/style-pet.png) | ![Pager](docs/screenshots/style-pager.png) |   |
 
 **On demand**
 
 | Pop-up on change | Change feed | Quick peek |
 | --- | --- | --- |
-| ![Pop-up on change](docs/screenshots/form-popup.png) | ![Change feed](docs/screenshots/form-feed.png) | ![Quick peek](docs/screenshots/form-peek.png) |
+| ![Pop-up on change](docs/screenshots/style-pop.png) | ![Change feed](docs/screenshots/style-feed.png) | ![Quick peek](docs/screenshots/style-peek.png) |
 
 ## On-screen styles
 

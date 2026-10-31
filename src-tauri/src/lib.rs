@@ -3,13 +3,14 @@ mod display;
 mod hit;
 mod hotkeys;
 mod pixfont;
+mod push;
 mod snapshot;
 mod state;
 mod tray;
 mod windows;
 
 use cownter_core::model::CoreEvent;
-use cownter_core::{recap, rules};
+use cownter_core::{push as push_api, recap, rules};
 use cownter_core::scheduler::{Scheduler, day_start_ms, now_ms};
 use cownter_core::secrets::{KeyringSecrets, SecretStore};
 use cownter_core::sources::Fetcher;
@@ -110,8 +111,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         async move { Scheduler::start(store, fetcher, tx) }
     });
     let display = DisplayConfig::load(&store).sanitized();
-    app.manage(AppState { store: store.clone(), scheduler, secrets, fetcher, display: Mutex::new(display.clone()) });
+    let token = push_api::ensure_token(&*secrets, &store).unwrap_or_else(|e| {
+        eprintln!("push token: {e}");
+        push_api::new_token()
+    });
+    let push = push::PushServer::new(push_api::Ctx::new(store.clone(), scheduler.clone(), token.clone()), token);
+    app.manage(AppState { store: store.clone(), scheduler, secrets, fetcher, display: Mutex::new(display.clone()), push });
     forward_events(handle.clone(), rx);
+    push::start(&handle, display.push_port, false);
     tray::build(&handle)?;
     hit::start(&handle);
     if let Err(e) = hotkeys::register(&handle, &display) {
@@ -177,6 +184,9 @@ pub fn run() {
             commands::save_snapshot,
             commands::keyring_available,
             commands::has_secrets,
+            commands::push_info,
+            commands::regenerate_push_token,
+            commands::restart_push,
             commands::save_display,
             commands::platform_info,
             commands::list_monitors,

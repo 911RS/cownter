@@ -105,7 +105,7 @@ export function Settings() {
           <NumbersPage views={views} groups={groups} onEdit={setEditing} onGroupsChanged={loadGroups} onboarded={!cfg || !loaded || cfg.onboarded || views.length > 0} />
         )}
         {page === "display" && cfg && <DisplayPage cfg={cfg} views={views} groups={groups} onChange={updateDisplay} />}
-        {page === "general" && cfg && <GeneralPage cfg={cfg} keyring={keyring} onChange={updateDisplay} />}
+        {page === "general" && cfg && <GeneralPage cfg={cfg} views={views} keyring={keyring} onChange={updateDisplay} />}
       </main>
       {editing && (
         <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setEditing(null)}>

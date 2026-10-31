@@ -143,6 +143,7 @@ impl Fetcher {
             SourceCfg::Shopify { shop, token } => shopify::fetch(self, shop, token, now).await,
             SourceCfg::Stripe { api_key, currency } => stripe::fetch(self, api_key, currency, now).await,
             SourceCfg::Formula { .. } => Err(FetchError::Config("formulas are computed, not fetched".into())),
+            SourceCfg::Push => Err(FetchError::Config("push numbers are sent to Cownter, not fetched".into())),
         }
     }
 

@@ -1,8 +1,10 @@
 use crate::display::DisplayConfig;
+use crate::push::PushInfo;
 use crate::state::AppState;
 use crate::{hotkeys, tray, windows};
 use base64::Engine;
 use cownter_core::formula;
+use cownter_core::push;
 use cownter_core::model::*;
 use cownter_core::recap::{self, Recap};
 use cownter_core::rules;
@@ -177,6 +179,7 @@ pub async fn test_source(state: State<'_, AppState>, source: SourceCfg, secrets:
     match &source {
         SourceCfg::CustomUrl { .. } => f.test_url(&source).await.map_err(e),
         SourceCfg::Formula { .. } => Err("formulas are checked when saved".into()),
+        SourceCfg::Push => Err("push numbers get their value from outside; see General for the address".into()),
         _ => {
             let started = Instant::now();
             let v = f.fetch(&source, chrono::Local::now()).await.map_err(e)?;
@@ -281,6 +284,26 @@ pub fn has_secrets(state: State<AppState>, names: Vec<String>) -> Vec<bool> {
 }
 
 #[tauri::command]
+pub fn push_info(state: State<AppState>) -> PushInfo {
+    state.push.info()
+}
+
+#[tauri::command]
+pub fn regenerate_push_token(app: AppHandle, state: State<AppState>) -> R<PushInfo> {
+    let token = push::new_token();
+    push::save_token(&*state.secrets, &state.store, &token)?;
+    state.push.set_token(token);
+    let info = state.push.info();
+    let _ = app.emit("push-changed", &info);
+    Ok(info)
+}
+
+#[tauri::command]
+pub fn restart_push(app: AppHandle, state: State<AppState>) -> PushInfo {
+    crate::push::start(&app, state.display().push_port, true).unwrap_or_else(|| state.push.info())
+}
+
+#[tauri::command]
 pub fn get_display(state: State<AppState>) -> DisplayConfig {
     state.display()
 }
@@ -300,6 +323,7 @@ pub fn save_display(app: AppHandle, state: State<AppState>, cfg: DisplayConfig) 
         windows::set_hidden(&app, &cfg);
     }
     windows::replace_all(&app, &cfg);
+    crate::push::start(&app, cfg.push_port, false);
     crate::refresh_tray(&app);
     let _ = app.emit("display-changed", &cfg);
     Ok(cfg)

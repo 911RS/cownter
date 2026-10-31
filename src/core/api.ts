@@ -7,6 +7,7 @@ import type {
   Entry,
   EntryView,
   Group,
+  PushInfo,
   Recap,
   SourceCfg,
   TestResult,
@@ -34,6 +35,9 @@ export const api = {
   saveSnapshot: (name: string, png: string) => invoke<string>("save_snapshot", { name, png }),
   keyringAvailable: () => invoke<boolean>("keyring_available"),
   hasSecrets: (names: string[]) => invoke<boolean[]>("has_secrets", { names }),
+  pushInfo: () => invoke<PushInfo>("push_info"),
+  regeneratePushToken: () => invoke<PushInfo>("regenerate_push_token"),
+  restartPush: () => invoke<PushInfo>("restart_push"),
   getDisplay: () => invoke<DisplayConfig>("get_display"),
   saveDisplay: (cfg: DisplayConfig) => invoke<DisplayConfig>("save_display", { cfg }),
   widgetResize: (width: number, height: number, show: boolean) =>
@@ -53,6 +57,10 @@ export function onCoreEvent(cb: (e: CoreEvent) => void): Promise<UnlistenFn> {
 
 export function onDisplayChanged(cb: (c: DisplayConfig) => void): Promise<UnlistenFn> {
   return listen<DisplayConfig>("display-changed", (ev) => cb(ev.payload));
+}
+
+export function onPushChanged(cb: (p: PushInfo) => void): Promise<UnlistenFn> {
+  return listen<PushInfo>("push-changed", (ev) => cb(ev.payload));
 }
 
 export function onReordered(cb: (ids: number[]) => void): Promise<UnlistenFn> {

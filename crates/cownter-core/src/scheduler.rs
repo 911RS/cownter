@@ -126,6 +126,9 @@ impl Scheduler {
             }
             return;
         }
+        if entry.source.is_push() {
+            return;
+        }
         let me = self.clone();
         let handle = self.inner.rt.spawn(async move { me.poll_loop(entry_id, false).await });
         self.inner.tasks.lock().unwrap().insert(entry_id, handle);
@@ -151,7 +154,7 @@ impl Scheduler {
         let Ok(entries) = self.inner.store.entries() else { return };
         let first = self.inner.tasks.lock().unwrap().is_empty();
         for e in &entries {
-            if e.source.is_formula() {
+            if e.source.is_formula() || e.source.is_push() {
                 continue;
             }
             let me = self.clone();
@@ -168,12 +171,17 @@ impl Scheduler {
 
     /// Records a value without any network call, as if the source had returned it.
     pub fn simulate(&self, entry_id: i64, value: f64) -> Result<(), String> {
+        self.record(entry_id, Some(value), None)
+    }
+
+    /// Stores a live number or text for an entry and sends the same events a poll would.
+    pub fn record(&self, entry_id: i64, value: Option<f64>, text: Option<String>) -> Result<(), String> {
         let store = &self.inner.store;
         if store.entry(entry_id).map_err(|e| e.to_string())?.is_none() {
             return Err("entry not found".into());
         }
         let ts = now_ms();
-        store.insert_reading(&Reading { entry_id, ts, value: Some(value), status: Status::Live, error: None, text: None })
+        store.insert_reading(&Reading { entry_id, ts, value, status: Status::Live, error: None, text })
             .map_err(|e| e.to_string())?;
         let evs = rules::after_reading(store, entry_id, ts, day_start_ms()).map_err(|e| e.to_string())?;
         self.send(evs);

@@ -18,7 +18,10 @@ const TYPES: { id: SourceType; label: string; hint: string; icon: Icon }[] = [
   { id: "shopify", label: "Shopify", hint: "Orders today", icon: { kind: "builtin", value: "cart", bg: "#3fa34d" } },
   { id: "stripe", label: "Stripe", hint: "Revenue today", icon: { kind: "builtin", value: "euro", bg: "#635bff" } },
   { id: "formula", label: "Formula", hint: "Math on other numbers", icon: { kind: "builtin", value: "chart", bg: "#7a5af8" } },
+  { id: "push", label: "Push", hint: "Sent by your scripts or the CLI", icon: { kind: "builtin", value: "bolt", bg: "#e8862b" } },
 ];
+
+const TEXT_TYPES: SourceType[] = ["customUrl", "push"];
 
 const DEFAULT_NAMES: Record<SourceType, string> = {
   customUrl: "",
@@ -27,6 +30,7 @@ const DEFAULT_NAMES: Record<SourceType, string> = {
   shopify: "Orders today",
   stripe: "Revenue today",
   formula: "",
+  push: "",
 };
 
 function rid() {
@@ -47,6 +51,8 @@ function defaultSource(t: SourceType, base: string): SourceCfg {
       return { type: "stripe", apiKey: `${base}-apiKey`, currency: "EUR" };
     case "formula":
       return { type: "formula", expr: "" };
+    case "push":
+      return { type: "push" };
   }
 }
 
@@ -79,6 +85,7 @@ function secretNames(s: SourceCfg): string[] {
     case "shopify":
       return [s.token];
     case "formula":
+    case "push":
       return [];
   }
 }
@@ -154,8 +161,8 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
     setD((x) => ({
       ...x,
       source: defaultSource(t, base),
-      textMode: t === "customUrl" ? x.textMode : false,
-      goalText: t === "customUrl" ? x.goalText : null,
+      textMode: TEXT_TYPES.includes(t) ? x.textMode : false,
+      goalText: TEXT_TYPES.includes(t) ? x.goalText : null,
       icon: def.icon,
       name,
       slug: slugTouched ? x.slug : name ? slugify(name) : "",
@@ -208,6 +215,18 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
   };
 
   const src = d.source;
+  const showsField = (
+    <Field label="Shows" wide hint={d.textMode ? "Text such as a status, a title or a version. The goal can be a text it changes to." : undefined}>
+      <Segmented
+        value={d.textMode ? "text" : "number"}
+        onChange={(v) => set({ textMode: v === "text", goalValue: v === "text" ? null : d.goalValue, goalText: v === "text" ? d.goalText : null })}
+        options={[
+          { id: "number", label: "A number" },
+          { id: "text", label: "Text" },
+        ]}
+      />
+    </Field>
+  );
   const otherSlugs = useMemo(() => views.filter((v) => v.entry.id !== d.id).map((v) => v.entry.slug), [views, d.id]);
 
   return (
@@ -244,7 +263,7 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
             ))}
           </div>
 
-          {!keyring && src.type !== "formula" && src.type !== "github" && (
+          {!keyring && src.type !== "formula" && src.type !== "github" && src.type !== "push" && (
             <Banner kind="error">Your system keyring is not available, so API keys cannot be stored safely. Unlock or install a keyring, then reopen Cownter.</Banner>
           )}
 
@@ -296,16 +315,7 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
                   <textarea rows={3} value={src.body ?? ""} onChange={(e) => setSource({ ...src, body: e.target.value || null })} />
                 </Field>
               )}
-              <Field label="Shows" wide hint={d.textMode ? "Text such as a status, a title or a version. The goal can be a text it changes to." : undefined}>
-                <Segmented
-                  value={d.textMode ? "text" : "number"}
-                  onChange={(v) => set({ textMode: v === "text", goalValue: v === "text" ? null : d.goalValue, goalText: v === "text" ? d.goalText : null })}
-                  options={[
-                    { id: "number", label: "A number" },
-                    { id: "text", label: "Text" },
-                  ]}
-                />
-              </Field>
+              {showsField}
               <Field label={d.textMode ? "Which text" : "Which number"} wide>
                 <Segmented
                   value={src.pick.kind}
@@ -404,7 +414,16 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
             </Field>
           )}
 
-          {src.type !== "formula" && (
+          {src.type === "push" && (
+            <div className="grid2">
+              {showsField}
+              <Field label="How to send values" wide hint="The address and token are on the General page.">
+                <code className="mono push-example">cownter set "{d.name.trim() || d.slug || "Name"}" {d.textMode ? "green" : "42"}</code>
+              </Field>
+            </div>
+          )}
+
+          {src.type !== "formula" && src.type !== "push" && (
             <div className="test-row">
               <button type="button" className="btn" onClick={runTest} disabled={testing}>
                 {testing ? "Testing…" : "Test"}
@@ -453,7 +472,7 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
                 ))}
               </select>
             </Field>
-            {src.type !== "formula" && (
+            {src.type !== "formula" && src.type !== "push" && (
               <Field label="Check every">
                 <select value={d.intervalS} onChange={(e) => set({ intervalS: Number(e.target.value) })}>
                   {(INTERVALS.includes(d.intervalS) ? INTERVALS : [...INTERVALS, d.intervalS].sort((a, b) => a - b)).map((s) => (

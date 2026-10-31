@@ -192,8 +192,8 @@ impl Store {
         if e.interval_s < 10 {
             return Err(StoreError::Invalid("poll interval must be at least 10 seconds".into()));
         }
-        if e.text_mode && !matches!(e.source, SourceCfg::CustomUrl { .. }) {
-            return Err(StoreError::Invalid("text values only work with the Any URL source".into()));
+        if e.text_mode && !e.source.allows_text() {
+            return Err(StoreError::Invalid("text values only work with the Any URL and Push sources".into()));
         }
         if e.goal_text.as_ref().is_some_and(|g| g.chars().count() > 200) {
             return Err(StoreError::Invalid("the goal text is too long".into()));
@@ -556,6 +556,11 @@ impl Store {
             "INSERT INTO settings(key, value) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             params![key, value],
         )?;
+        Ok(())
+    }
+
+    pub fn delete_setting(&self, key: &str) -> Result<()> {
+        self.c().execute("DELETE FROM settings WHERE key=?1", [key])?;
         Ok(())
     }
 

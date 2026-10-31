@@ -116,11 +116,22 @@ pub enum SourceCfg {
     Formula {
         expr: String,
     },
+    /// Set from outside through the local push endpoint.
+    Push,
 }
 
 impl SourceCfg {
     pub fn is_formula(&self) -> bool {
         matches!(self, SourceCfg::Formula { .. })
+    }
+
+    pub fn is_push(&self) -> bool {
+        matches!(self, SourceCfg::Push)
+    }
+
+    /// Text values work with sources that can return any text.
+    pub fn allows_text(&self) -> bool {
+        matches!(self, SourceCfg::CustomUrl { .. } | SourceCfg::Push)
     }
 
     /// Keyring names this source refers to.
@@ -137,7 +148,7 @@ impl SourceCfg {
             SourceCfg::GitHub { token, .. } => token.iter().cloned().collect(),
             SourceCfg::Shopify { token, .. } => vec![token.clone()],
             SourceCfg::Stripe { api_key, .. } => vec![api_key.clone()],
-            SourceCfg::Formula { .. } => vec![],
+            SourceCfg::Formula { .. } | SourceCfg::Push => vec![],
         }
     }
 }
@@ -338,6 +349,9 @@ mod tests {
         assert_eq!(j["type"], "youtube");
         assert_eq!(j["channelId"], "UC1");
         assert_eq!(j["apiKey"], "entry-1-apiKey");
+        assert_eq!(serde_json::to_value(SourceCfg::Push).unwrap(), serde_json::json!({"type": "push"}));
+        let back: SourceCfg = serde_json::from_str(r#"{"type":"push"}"#).unwrap();
+        assert!(back.is_push());
         let p = serde_json::to_value(Pick::FirstNumber).unwrap();
         assert_eq!(p, serde_json::json!({"kind": "firstNumber"}));
     }

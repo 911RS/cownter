@@ -209,6 +209,15 @@ textarea { resize: vertical; font-family: "JetBrains Mono", monospace; font-size
 .dot-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .dot-status.good { color: var(--green); }
 .dot-status.bad { color: var(--red); }
+.port-input { width: 90px; text-align: right; }
+.token { color: var(--ink-2); }
+.push-error { display: flex; align-items: center; gap: 10px; padding: 10px 14px 0; border-top: 1px solid var(--line); }
+.push-error .banner { flex: 1; margin: 0; }
+.push-example-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--line); }
+.push-curl { width: 100%; margin: 0; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line-2); border-radius: 8px; white-space: pre-wrap; word-break: break-all; color: var(--ink-2); }
+.push-example { display: block; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line-2); border-radius: 8px; color: var(--ink-2); }
+.push-note { padding: 0 14px 12px; }
+.push-note .banner { margin: 0; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
 .pill-btn { border: 1px solid var(--line-2); background: var(--bg); border-radius: 99px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: var(--ink-2); cursor: pointer; }

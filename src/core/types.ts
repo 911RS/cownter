@@ -21,7 +21,8 @@ export type SourceCfg =
   | { type: "github"; target: string; metric: GitHubMetric; token: string | null }
   | { type: "shopify"; shop: string; token: string }
   | { type: "stripe"; apiKey: string; currency: string }
-  | { type: "formula"; expr: string };
+  | { type: "formula"; expr: string }
+  | { type: "push" };
 
 export type SourceType = SourceCfg["type"];
 
@@ -199,6 +200,15 @@ export interface DisplayConfig {
   onboarded: boolean;
   weeklyRecap: boolean;
   recapWeekday: number;
+  pushPort: number;
+}
+
+export interface PushInfo {
+  port: number;
+  url: string;
+  token: string;
+  running: boolean;
+  error: string | null;
 }
 
 export interface TestResult {

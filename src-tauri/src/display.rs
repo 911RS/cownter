@@ -1,3 +1,4 @@
+use cownter_core::push::DEFAULT_PORT;
 use cownter_core::store::Store;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -174,6 +175,8 @@ pub struct DisplayConfig {
     pub weekly_recap: bool,
     /// Day the weekly recap shows, 0 = Monday to 6 = Sunday.
     pub recap_weekday: u32,
+    /// Port of the local push endpoint on 127.0.0.1.
+    pub push_port: u16,
 }
 
 impl Default for DisplayConfig {
@@ -196,6 +199,7 @@ impl Default for DisplayConfig {
             onboarded: false,
             weekly_recap: true,
             recap_weekday: 0,
+            push_port: DEFAULT_PORT,
         }
     }
 }
@@ -311,6 +315,9 @@ impl DisplayConfig {
             }
         }
         self.recap_weekday = self.recap_weekday.min(6);
+        if self.push_port < 1024 {
+            self.push_port = DEFAULT_PORT;
+        }
         self.volume = if self.volume.is_finite() { self.volume.clamp(0.0, 1.0) } else { 0.6 };
         self
     }
@@ -338,6 +345,7 @@ mod tests {
         assert_eq!(c.hotkey_toggle, "CommandOrControl+Shift+U");
         assert!(c.weekly_recap);
         assert_eq!(c.recap_weekday, 0);
+        assert_eq!(c.push_port, DEFAULT_PORT);
     }
 
     #[test]
@@ -347,8 +355,10 @@ mod tests {
         c.edge.offset = 9.0;
         c.volume = f64::NAN;
         c.recap_weekday = 12;
+        c.push_port = 80;
         let c = c.sanitized();
         assert_eq!(c.recap_weekday, 6);
+        assert_eq!(c.push_port, DEFAULT_PORT);
         assert_eq!(c.island.skin, "clean");
         assert_eq!(c.edge.offset, 1.0);
         assert_eq!(c.volume, 0.6);

@@ -1,13 +1,109 @@
 import { useEffect, useState } from "react";
-import { api, errorText } from "../core/api";
+import { api, errorText, onPushChanged } from "../core/api";
 import { SOUNDS, playSound } from "../core/sounds";
-import type { DisplayConfig } from "../core/types";
+import type { DisplayConfig, EntryView, PushInfo } from "../core/types";
 import logo from "../../assets/branding/cownter-symbol.png";
+import { curlExample, maskToken, parsePort } from "./push";
 import { Banner, Group, HotkeyInput, Row, Toggle } from "./ui";
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-export function GeneralPage({ cfg, keyring, onChange }: { cfg: DisplayConfig; keyring: boolean; onChange: (c: DisplayConfig) => void }) {
+function copy(text: string, done: () => void) {
+  navigator.clipboard.writeText(text).then(done).catch(() => {});
+}
+
+function PushGroup({ cfg, views, onChange }: { cfg: DisplayConfig; views: EntryView[]; onChange: (c: DisplayConfig) => void }) {
+  const [info, setInfo] = useState<PushInfo | null>(null);
+  const [port, setPort] = useState(String(cfg.pushPort));
+  const [shown, setShown] = useState(false);
+  const [armed, setArmed] = useState(false);
+  const [copied, setCopied] = useState("");
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    api.pushInfo().then(setInfo).catch((e) => setErr(errorText(e)));
+    const un = onPushChanged(setInfo);
+    return () => {
+      un.then((f) => f());
+    };
+  }, []);
+  useEffect(() => setPort(String(cfg.pushPort)), [cfg.pushPort]);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(""), 1500);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  const commitPort = () => {
+    const p = parsePort(port);
+    if (p === null) {
+      setErr("Use a port from 1024 to 65535.");
+      setPort(String(cfg.pushPort));
+      return;
+    }
+    setErr("");
+    if (p !== cfg.pushPort) onChange({ ...cfg, pushPort: p });
+  };
+  const regenerate = () => {
+    if (!armed) return setArmed(true);
+    setArmed(false);
+    api.regeneratePushToken().then(setInfo).catch((e) => setErr(errorText(e)));
+  };
+
+  const name = views.find((v) => v.entry.source.type === "push")?.entry.name ?? "Orders";
+  const url = info?.url ?? `http://127.0.0.1:${cfg.pushPort}`;
+  const token = info?.token ?? "";
+  return (
+    <Group title="Push and command line">
+      <Row label="Address" hint="Push numbers get their value from requests to this address. Only programs on this computer can reach it.">
+        <span className="mono">{url}</span>
+        <span className={"dot-status " + (info?.running ? "good" : "bad")}>{info?.running ? "Listening" : "Off"}</span>
+      </Row>
+      {info?.error && (
+        <div className="push-error">
+          <Banner kind="error">{info.error}</Banner>
+          <button type="button" className="btn" onClick={() => api.restartPush().then(setInfo).catch((e) => setErr(errorText(e)))}>
+            Try again
+          </button>
+        </div>
+      )}
+      <Row label="Port">
+        <input className="mono port-input" inputMode="numeric" value={port} onChange={(e) => setPort(e.target.value.replace(/[^0-9]/g, "").slice(0, 5))} onBlur={commitPort} onKeyDown={(e) => e.key === "Enter" && commitPort()} />
+      </Row>
+      <Row label="Token" hint="Send it as Authorization: Bearer <token>. Kept in your keyring when one is available.">
+        <span className="mono token">{shown ? token : maskToken(token)}</span>
+        <button type="button" className="btn ghost" onClick={() => setShown(!shown)} disabled={!token}>
+          {shown ? "Hide" : "Show"}
+        </button>
+        <button type="button" className="btn" onClick={() => copy(token, () => setCopied("token"))} disabled={!token}>
+          {copied === "token" ? "Copied" : "Copy"}
+        </button>
+        <button type="button" className={"btn danger" + (armed ? " armed" : "")} onClick={regenerate} onBlur={() => setArmed(false)}>
+          {armed ? "Old token stops working" : "Regenerate"}
+        </button>
+      </Row>
+      <div className="push-example-row">
+        <div className="row-text">
+          <span className="row-label">Try it</span>
+          <span className="row-hint">
+            Or use the command line: <code className="mono">cownter set "{name}" 42</code>, <code className="mono">cownter add "{name}" 1</code>, <code className="mono">cownter get "{name}"</code>, <code className="mono">cownter list</code>.
+          </span>
+        </div>
+        <pre className="mono push-curl">{curlExample(url, shown ? token : maskToken(token), name)}</pre>
+        <button type="button" className="btn" onClick={() => copy(curlExample(url, token, name), () => setCopied("curl"))} disabled={!token}>
+          {copied === "curl" ? "Copied" : "Copy command"}
+        </button>
+      </div>
+      {err && (
+        <div className="push-note">
+          <Banner kind="error">{err}</Banner>
+        </div>
+      )}
+    </Group>
+  );
+}
+
+export function GeneralPage({ cfg, views, keyring, onChange }: { cfg: DisplayConfig; views: EntryView[]; keyring: boolean; onChange: (c: DisplayConfig) => void }) {
   const [info, setInfo] = useState<{ os: string; version: string } | null>(null);
   const [recapErr, setRecapErr] = useState("");
   useEffect(() => {
@@ -66,6 +162,8 @@ export function GeneralPage({ cfg, keyring, onChange }: { cfg: DisplayConfig; ke
           <HotkeyInput value={cfg.hotkeyRefresh} onChange={(hotkeyRefresh) => onChange({ ...cfg, hotkeyRefresh })} />
         </Row>
       </Group>
+
+      <PushGroup cfg={cfg} views={views} onChange={onChange} />
 
       <Group title="System">
         <Row label="Start at login">

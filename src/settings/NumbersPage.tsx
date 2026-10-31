@@ -157,7 +157,7 @@ export function NumbersPage({
               <span className={"entry-sub " + v.status} title={v.error ?? undefined}>
                 <i className="sdot" />
                 {v.status === "live" || v.status === "polling"
-                  ? `${v.entry.source.type === "formula" ? "Formula" : intervalLabel(v.entry.intervalS)} · ${timeAgo(v.updatedAt, now)}`
+                  ? `${v.entry.source.type === "formula" ? "Formula" : v.entry.source.type === "push" ? "Push" : intervalLabel(v.entry.intervalS)} · ${timeAgo(v.updatedAt, now)}`
                   : `${STATUS_LABEL[v.status]}${v.error ? ": " + v.error : ""}`}
               </span>
             </div>

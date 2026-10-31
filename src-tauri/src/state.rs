@@ -1,4 +1,5 @@
 use crate::display::DisplayConfig;
+use crate::push::PushServer;
 use cownter_core::scheduler::Scheduler;
 use cownter_core::secrets::SecretStore;
 use cownter_core::sources::Fetcher;
@@ -11,6 +12,7 @@ pub struct AppState {
     pub secrets: Arc<dyn SecretStore>,
     pub fetcher: Arc<Fetcher>,
     pub display: Mutex<DisplayConfig>,
+    pub push: PushServer,
 }
 
 impl AppState {

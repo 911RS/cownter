@@ -9,6 +9,7 @@ mod snapshot;
 mod state;
 mod sync;
 mod tray;
+mod updates;
 mod windows;
 
 use cownter_core::model::CoreEvent;
@@ -123,6 +124,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     push::start(&handle, display.push_port, false);
     tray::build(&handle)?;
     hit::start(&handle);
+    updates::start(&handle);
     if let Err(e) = hotkeys::register(&handle, &display) {
         eprintln!("{e}");
     }
@@ -162,6 +164,8 @@ pub fn run() {
             let _ = windows::open_settings(app);
         }))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updates::Pending::default())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(setup)
@@ -204,6 +208,8 @@ pub fn run() {
             commands::platform_info,
             commands::list_monitors,
             commands::quit_app,
+            commands::check_update,
+            commands::install_update,
         ])
         .build(tauri::generate_context!())
         .expect("error while building Cownter");

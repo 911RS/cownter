@@ -214,6 +214,7 @@ export interface DisplayConfig {
   pushPort: number;
   soundPack: string;
   seasonal: boolean;
+  autoUpdate: boolean;
 }
 
 export interface PushInfo {
@@ -261,4 +262,11 @@ export interface ImportReport {
   groups: number;
   alerts: number;
   skipped: string[];
+}
+
+export interface UpdateInfo {
+  current: string;
+  available: string | null;
+  notes: string | null;
+  error: string | null;
 }

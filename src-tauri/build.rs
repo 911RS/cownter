@@ -4,6 +4,7 @@ const COMMANDS: &[&str] = &[
     "get_display",
     "widget_resize",
     "widget_done",
+    "widget_hit",
     "open_settings",
     "refresh_all",
     "save_entry",
@@ -28,6 +29,16 @@ const COMMANDS: &[&str] = &[
     "save_display",
     "platform_info",
     "quit_app",
+    "check_update",
+    "install_update",
+    "push_info",
+    "regenerate_push_token",
+    "restart_push",
+    "set_sync_folder",
+    "sync_dismiss_notice",
+    "sync_export_now",
+    "sync_import_now",
+    "sync_info",
 ];
 
 fn main() {

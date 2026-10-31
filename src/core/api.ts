@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
+  UpdateInfo,
   Alert,
   CoreEvent,
   DisplayConfig,
@@ -41,6 +42,8 @@ export const api = {
   pushInfo: () => invoke<PushInfo>("push_info"),
   regeneratePushToken: () => invoke<PushInfo>("regenerate_push_token"),
   restartPush: () => invoke<PushInfo>("restart_push"),
+  checkUpdate: () => invoke<UpdateInfo>("check_update"),
+  installUpdate: () => invoke<void>("install_update"),
   syncInfo: () => invoke<SyncInfo>("sync_info"),
   setSyncFolder: (folder: string | null) => invoke<SyncInfo>("set_sync_folder", { folder }),
   syncExportNow: () => invoke<SyncInfo>("sync_export_now"),
@@ -69,6 +72,10 @@ export function onDisplayChanged(cb: (c: DisplayConfig) => void): Promise<Unlist
 
 export function onPushChanged(cb: (p: PushInfo) => void): Promise<UnlistenFn> {
   return listen<PushInfo>("push-changed", (ev) => cb(ev.payload));
+}
+
+export function onUpdateAvailable(cb: (u: UpdateInfo) => void): Promise<UnlistenFn> {
+  return listen<UpdateInfo>("update-available", (ev) => cb(ev.payload));
 }
 
 export function onSettingsSynced(cb: (r: ImportReport) => void): Promise<UnlistenFn> {

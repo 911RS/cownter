@@ -183,6 +183,8 @@ pub struct DisplayConfig {
     pub sound_pack: String,
     /// Seasonal colours and marks on the widgets around holidays.
     pub seasonal: bool,
+    /// Look for new versions on GitHub in the background.
+    pub auto_update: bool,
 }
 
 impl Default for DisplayConfig {
@@ -208,6 +210,7 @@ impl Default for DisplayConfig {
             push_port: DEFAULT_PORT,
             sound_pack: "soft".into(),
             seasonal: false,
+            auto_update: true,
         }
     }
 }

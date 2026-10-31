@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { api, errorText, onPushChanged, onSettingsSynced } from "../core/api";
+import { api, errorText, onPushChanged, onSettingsSynced, onUpdateAvailable } from "../core/api";
 import { timeAgo } from "../core/format";
 import { PACKS, ROLE_DEFAULT, SOUNDS, playSound, resolveSound } from "../core/sounds";
-import type { DisplayConfig, EntryView, PushInfo, SyncInfo } from "../core/types";
+import type { DisplayConfig, EntryView, PushInfo, SyncInfo, UpdateInfo } from "../core/types";
 import logo from "../../assets/branding/cownter-symbol.png";
 import { curlExample, maskToken, parsePort } from "./push";
 import { Banner, Group, HotkeyInput, Row, Toggle } from "./ui";
@@ -100,6 +100,70 @@ function PushGroup({ cfg, views, onChange }: { cfg: DisplayConfig; views: EntryV
           <Banner kind="error">{err}</Banner>
         </div>
       )}
+    </Group>
+  );
+}
+
+function UpdateGroup({ cfg, onChange }: { cfg: DisplayConfig; onChange: (c: DisplayConfig) => void }) {
+  const [info, setInfo] = useState<UpdateInfo | null>(null);
+  const [busy, setBusy] = useState<"" | "check" | "install">("check");
+  const [err, setErr] = useState("");
+
+  const check = () => {
+    setBusy("check");
+    setErr("");
+    api
+      .checkUpdate()
+      .then(setInfo)
+      .catch((e) => setErr(errorText(e)))
+      .finally(() => setBusy(""));
+  };
+  useEffect(() => {
+    check();
+    const un = onUpdateAvailable(setInfo);
+    return () => {
+      un.then((f) => f());
+    };
+  }, []);
+
+  const install = () => {
+    setBusy("install");
+    setErr("");
+    api.installUpdate().catch((e) => {
+      setErr(errorText(e));
+      setBusy("");
+    });
+  };
+
+  const status =
+    busy === "check"
+      ? "Checking…"
+      : busy === "install"
+        ? "Downloading and installing… Cownter restarts when it's done."
+        : info?.available
+          ? `Version ${info.available} is available (you have ${info.current}).`
+          : info && !info.error
+            ? `You have the latest version, ${info.current}.`
+            : "";
+
+  return (
+    <Group title="Updates">
+      <Row label="Check for updates automatically" hint="Looks for new releases on GitHub when Cownter starts and every 6 hours.">
+        <Toggle checked={cfg.autoUpdate} onChange={(autoUpdate) => onChange({ ...cfg, autoUpdate })} />
+      </Row>
+      <Row label="Version" hint={status || undefined}>
+        {info?.available ? (
+          <button type="button" className="btn primary" disabled={busy !== ""} onClick={install}>
+            Install and restart
+          </button>
+        ) : (
+          <button type="button" className="btn" disabled={busy !== ""} onClick={check}>
+            Check now
+          </button>
+        )}
+      </Row>
+      {info?.available && info.notes && <Row label="What's new" hint={info.notes} />}
+      {(err || info?.error) && <Banner kind="error">{err || `Couldn't check for updates: ${info?.error}`}</Banner>}
     </Group>
   );
 }
@@ -297,6 +361,8 @@ export function GeneralPage({ cfg, views, keyring, onChange }: { cfg: DisplayCon
       <PushGroup cfg={cfg} views={views} onChange={onChange} />
 
       <SyncGroup />
+
+      <UpdateGroup cfg={cfg} onChange={onChange} />
 
       <Group title="System">
         <Row label="Start at login">

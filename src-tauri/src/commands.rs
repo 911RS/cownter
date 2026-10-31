@@ -461,3 +461,13 @@ pub fn tray_update_for(app: &AppHandle, state: &AppState, view: &EntryView) {
         tray::update(app, Some(view), cfg.tray.show_number);
     }
 }
+
+#[tauri::command]
+pub async fn check_update(app: AppHandle) -> crate::updates::UpdateInfo {
+    crate::updates::check(&app).await
+}
+
+#[tauri::command]
+pub async fn install_update(app: AppHandle) -> R<()> {
+    crate::updates::install(&app).await
+}

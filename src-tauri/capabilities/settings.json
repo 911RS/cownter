@@ -39,6 +39,16 @@
     "allow-weekly-recap",
     "allow-show-recap",
     "allow-save-snapshot",
-    "allow-export-csv"
+    "allow-export-csv",
+    "allow-push-info",
+    "allow-regenerate-push-token",
+    "allow-restart-push",
+    "allow-set-sync-folder",
+    "allow-sync-dismiss-notice",
+    "allow-sync-export-now",
+    "allow-sync-import-now",
+    "allow-sync-info",
+    "allow-check-update",
+    "allow-install-update"
   ]
 }

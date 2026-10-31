@@ -52,6 +52,7 @@ export interface NumberFormat {
 export interface Sounds {
   onChange: string | null;
   onGoal: string | null;
+  pack?: string | null;
 }
 
 export interface Entry {
@@ -211,6 +212,7 @@ export interface DisplayConfig {
   weeklyRecap: boolean;
   recapWeekday: number;
   pushPort: number;
+  soundPack: string;
 }
 
 export interface PushInfo {

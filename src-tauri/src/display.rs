@@ -31,6 +31,8 @@ pub const EXTRA_FORMS: &[(&str, &str)] = &[
     ("toptabs", "topCenter"),
 ];
 
+pub const SOUND_PACKS: &[&str] = &["soft", "cash", "cheer", "arcade", "cowbell"];
+
 const POSITIONS: &[&str] = &["topLeft", "topCenter", "topRight", "middleLeft", "middleCenter", "middleRight", "bottomLeft", "bottomCenter", "bottomRight"];
 
 fn extra_default(id: &str, position: &str) -> FormCfg {
@@ -177,6 +179,8 @@ pub struct DisplayConfig {
     pub recap_weekday: u32,
     /// Port of the local push endpoint on 127.0.0.1.
     pub push_port: u16,
+    /// `soft`, `cash`, `cheer`, `arcade` or `cowbell`.
+    pub sound_pack: String,
 }
 
 impl Default for DisplayConfig {
@@ -200,6 +204,7 @@ impl Default for DisplayConfig {
             weekly_recap: true,
             recap_weekday: 0,
             push_port: DEFAULT_PORT,
+            sound_pack: "soft".into(),
         }
     }
 }
@@ -318,6 +323,9 @@ impl DisplayConfig {
         if self.push_port < 1024 {
             self.push_port = DEFAULT_PORT;
         }
+        if !SOUND_PACKS.contains(&self.sound_pack.as_str()) {
+            self.sound_pack = "soft".into();
+        }
         self.volume = if self.volume.is_finite() { self.volume.clamp(0.0, 1.0) } else { 0.6 };
         self
     }
@@ -346,6 +354,9 @@ mod tests {
         assert!(c.weekly_recap);
         assert_eq!(c.recap_weekday, 0);
         assert_eq!(c.push_port, DEFAULT_PORT);
+        assert_eq!(c.sound_pack, "soft");
+        let a: DisplayConfig = serde_json::from_str(r#"{"soundPack":"arcade"}"#).unwrap();
+        assert_eq!(a.sanitized().sound_pack, "arcade");
     }
 
     #[test]
@@ -356,7 +367,9 @@ mod tests {
         c.volume = f64::NAN;
         c.recap_weekday = 12;
         c.push_port = 80;
+        c.sound_pack = "kazoo".into();
         let c = c.sanitized();
+        assert_eq!(c.sound_pack, "soft");
         assert_eq!(c.recap_weekday, 6);
         assert_eq!(c.push_port, DEFAULT_PORT);
         assert_eq!(c.island.skin, "clean");

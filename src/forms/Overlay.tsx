@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../core/api";
 import { formatValue } from "../core/format";
 import { useDisplay, useEntries } from "../core/hooks";
-import { playSound } from "../core/sounds";
+import { playSound, resolveSound } from "../core/sounds";
 import type { EntryView } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
 import { Skin } from "../skins/Skin";
@@ -78,14 +78,16 @@ export function Overlay() {
     if (!c) return;
     const vol = c.muted ? 0 : c.volume;
     if (e.type === "valueChanged" || e.type === "textChanged") {
-      playSound(views.get(e.entryId)?.entry.sounds.onChange, vol);
+      const s = views.get(e.entryId)?.entry.sounds;
+      playSound(resolveSound("change", s?.onChange, s?.pack, c.soundPack), vol);
       return;
     }
     if (e.type !== "goalReached" && e.type !== "allTimeHigh") return;
     const view = views.get(e.entryId);
     if (!view) return;
     if (e.type === "goalReached" || view.entry.sounds.onGoal) {
-      playSound(view.entry.sounds.onGoal ?? (view.entry.celebrate ? "sparkle" : null), vol);
+      const s = view.entry.sounds;
+      playSound(resolveSound("goal", s.onGoal ?? (view.entry.celebrate ? "sparkle" : null), s.pack, c.soundPack), vol);
     }
     if (c.celebration && view.entry.celebrate) {
       setParty({ key: ++seq.current, view, value: e.value, text: e.type === "goalReached" ? (e.text ?? null) : null, kind: e.type === "goalReached" ? "goal" : "record" });

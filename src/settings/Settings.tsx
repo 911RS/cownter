@@ -109,7 +109,7 @@ export function Settings() {
       </main>
       {editing && (
         <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && setEditing(null)}>
-          <EntryEditor key={editing.id || "new"} initial={editing} views={views} groups={groups} keyring={keyring} onClose={() => setEditing(null)} onSaved={onSaved} />
+          <EntryEditor key={editing.id || "new"} initial={editing} soundPack={cfg?.soundPack} views={views} groups={groups} keyring={keyring} onClose={() => setEditing(null)} onSaved={onSaved} />
         </div>
       )}
     </div>

@@ -59,6 +59,9 @@ fn formulas_using(state: &AppState, slug: &str, except: i64) -> R<Vec<String>> {
 #[tauri::command]
 pub fn save_entry(app: AppHandle, state: State<AppState>, mut entry: Entry, secrets: Vec<(String, String)>) -> R<Entry> {
     entry.slug = entry.slug.trim().to_string();
+    if entry.sounds.pack.as_deref().is_some_and(|p| !crate::display::SOUND_PACKS.contains(&p)) {
+        entry.sounds.pack = None;
+    }
     if let SourceCfg::Formula { expr } = &entry.source {
         rules::validate_formula(&state.store, &entry.slug, expr)?;
         entry.interval_s = entry.interval_s.max(10);

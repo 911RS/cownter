@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, errorText } from "../core/api";
 import { formatValue, goalLeft, intervalLabel, slugify } from "../core/format";
-import { SOUNDS, playSound } from "../core/sounds";
+import { PACKS, ROLE_DEFAULT, SOUNDS, packOf, playSound, resolveSound } from "../core/sounds";
 import type { Entry, EntryView, Group, Header, Icon, Pick, SourceCfg, SourceType, TestResult } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
 import { AlertsEditor } from "./AlertsEditor";
@@ -141,9 +141,10 @@ interface Props {
   keyring: boolean;
   onClose: () => void;
   onSaved: (e: Entry) => void;
+  soundPack?: string;
 }
 
-export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved }: Props) {
+export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved, soundPack }: Props) {
   const [d, setD] = useState<Entry>(initial);
   const [base] = useState(() => `e${rid()}`);
   const [slugTouched, setSlugTouched] = useState(initial.id > 0);
@@ -653,24 +654,42 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
           <h3>4 · Sounds</h3>
           <p className="sec-hint">A short sound when something happens. Volume is on the General page.</p>
           <div className="sec-rows">
+            <div className="sec-row">
+              <span className="sec-label">Sound pack</span>
+              <select value={d.sounds.pack ?? ""} onChange={(e) => set({ sounds: { ...d.sounds, pack: e.target.value || null } })}>
+                <option value="">Same as General ({PACKS.find((p) => p.id === packOf(null, soundPack))?.label})</option>
+                {PACKS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             {(
               [
-                ["onChange", "When the number changes"],
-                ["onGoal", "When it reaches the goal or a new record"],
+                ["onChange", "change", "When the number changes"],
+                ["onGoal", "goal", "When it reaches the goal or a new record"],
               ] as const
-            ).map(([key, label]) => (
+            ).map(([key, role, label]) => (
               <div className="sec-row" key={key}>
                 <span className="sec-label">{label}</span>
                 <div className="row">
-                  <select value={d.sounds[key] ?? ""} onChange={(e) => set({ sounds: { ...d.sounds, [key]: e.target.value || null } })}>
-                    <option value="">No sound</option>
-                    {SOUNDS.map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.label}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="button" className="icon-btn" aria-label="Play" disabled={!d.sounds[key]} onClick={() => playSound(d.sounds[key], 0.7)}>
+                  {packOf(d.sounds.pack, soundPack) === "soft" ? (
+                    <select value={d.sounds[key] ?? ""} onChange={(e) => set({ sounds: { ...d.sounds, [key]: e.target.value || null } })}>
+                      <option value="">No sound</option>
+                      {SOUNDS.map((x) => (
+                        <option key={x.id} value={x.id}>
+                          {x.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select value={d.sounds[key] ? "on" : ""} onChange={(e) => set({ sounds: { ...d.sounds, [key]: e.target.value ? (d.sounds[key] ?? ROLE_DEFAULT[role]) : null } })}>
+                      <option value="">No sound</option>
+                      <option value="on">{PACKS.find((p) => p.id === packOf(d.sounds.pack, soundPack))?.label} sound</option>
+                    </select>
+                  )}
+                  <button type="button" className="icon-btn" aria-label="Play" disabled={!d.sounds[key]} onClick={() => playSound(resolveSound(role, d.sounds[key], d.sounds.pack, soundPack), 0.7)}>
                     ▶
                   </button>
                 </div>

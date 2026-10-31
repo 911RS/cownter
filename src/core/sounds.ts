@@ -10,6 +10,38 @@ export const SOUNDS = [
 
 export type SoundId = (typeof SOUNDS)[number]["id"];
 
+export const PACKS = [
+  { id: "soft", label: "Soft" },
+  { id: "cash", label: "Cash register" },
+  { id: "cheer", label: "Crowd cheer" },
+  { id: "arcade", label: "Arcade" },
+  { id: "cowbell", label: "Cowbell" },
+] as const;
+
+export type PackId = (typeof PACKS)[number]["id"];
+export type SoundRole = "change" | "goal";
+
+/** Default sound for a role when a number turns a sound on. */
+export const ROLE_DEFAULT: Record<SoundRole, SoundId> = { change: "chime", goal: "sparkle" };
+
+export function isPack(id: string | null | undefined): id is PackId {
+  return PACKS.some((p) => p.id === id);
+}
+
+/** Pack in effect: the number's own pick, else the global one, else Soft. */
+export function packOf(entryPack: string | null | undefined, globalPack: string | null | undefined): PackId {
+  if (isPack(entryPack)) return entryPack;
+  if (isPack(globalPack)) return globalPack;
+  return "soft";
+}
+
+/** Sound to play for a role. Soft keeps the chosen sound; other packs replace it with their own voice. */
+export function resolveSound(role: SoundRole, chosen: string | null | undefined, entryPack?: string | null, globalPack?: string | null): string | null {
+  if (!chosen) return null;
+  const pack = packOf(entryPack, globalPack);
+  return pack === "soft" ? chosen : `${pack}-${role}`;
+}
+
 let ctx: AudioContext | null = null;
 
 function audio(): AudioContext | null {
@@ -82,6 +114,46 @@ function bell(c: AudioContext, out: AudioNode, freq: number, at: number, dur: nu
   mod.stop(at + dur + 0.05);
 }
 
+function swell(c: AudioContext, out: AudioNode, at: number, dur: number, freq: number, gain: number, rise = 0.3) {
+  const len = Math.max(1, Math.floor(c.sampleRate * dur));
+  const buf = c.createBuffer(1, len, c.sampleRate);
+  const d = buf.getChannelData(0);
+  const up = Math.max(1, Math.floor(len * rise));
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (i < up ? i / up : (1 - (i - up) / (len - up)) ** 2);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const bp = c.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = freq;
+  bp.Q.value = 0.7;
+  const g = c.createGain();
+  g.gain.value = gain;
+  src.connect(bp).connect(g).connect(out);
+  src.start(at);
+}
+
+function cowbell(c: AudioContext, out: AudioNode, at: number, gain: number, pitch = 1) {
+  const bp = c.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = 2640 * pitch;
+  bp.Q.value = 1.2;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(gain, at + 0.004);
+  g.gain.exponentialRampToValueAtTime(gain * 0.3, at + 0.06);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.6);
+  bp.connect(g).connect(out);
+  for (const f of [540, 800]) {
+    const o = c.createOscillator();
+    o.type = "square";
+    o.frequency.value = f * pitch;
+    o.connect(bp);
+    o.start(at);
+    o.stop(at + 0.65);
+  }
+  tone(c, out, 800 * pitch, at, 0.25, { gain: gain * 0.25 });
+}
+
 /** Plays a built-in sound. `volume` is 0..1. */
 export function playSound(id: string | null | undefined, volume = 0.6) {
   if (!id || volume <= 0) return;
@@ -121,6 +193,44 @@ export function playSound(id: string | null | undefined, volume = 0.6) {
     case "sparkle":
       [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(c, master, f, t + i * 0.075, 0.6 + i * 0.1, { type: "triangle", gain: 0.13 }));
       tone(c, master, 2093, t + 0.32, 0.9, { gain: 0.05 });
+      break;
+    case "cash-change":
+      noise(c, master, t, 0.05, 3200, 0.45);
+      tone(c, master, 2093, t + 0.05, 0.5, { type: "triangle", gain: 0.12 });
+      tone(c, master, 2637, t + 0.05, 0.7, { gain: 0.1 });
+      break;
+    case "cash-goal":
+      noise(c, master, t, 0.08, 1400, 0.5);
+      noise(c, master, t + 0.09, 0.05, 3200, 0.4);
+      [2093, 2637, 3136, 2637, 3520, 4186].forEach((f, i) => tone(c, master, f, t + 0.14 + i * 0.06, 0.35, { type: "triangle", gain: 0.08 }));
+      bell(c, master, 1318.5, t + 0.14, 1.4, 0.12);
+      break;
+    case "cheer-change":
+      swell(c, master, t, 0.9, 1100, 0.55);
+      tone(c, master, 520, t + 0.08, 0.5, { type: "triangle", gain: 0.04, glideTo: 880, glideTime: 0.3 });
+      break;
+    case "cheer-goal":
+      swell(c, master, t, 2.2, 1000, 0.7, 0.25);
+      swell(c, master, t + 0.1, 2, 2400, 0.25, 0.3);
+      for (let i = 0; i < 9; i++) noise(c, master, t + 0.25 + i * 0.16 + (i % 3) * 0.03, 0.03, 1800, 0.5);
+      [440, 554, 660].forEach((f, i) => tone(c, master, f, t + 0.2 + i * 0.12, 0.7, { type: "triangle", gain: 0.035, glideTo: f * 1.6, glideTime: 0.4 }));
+      break;
+    case "arcade-change":
+      tone(c, master, 988, t, 0.07, { type: "square", gain: 0.08 });
+      tone(c, master, 1319, t + 0.07, 0.22, { type: "square", gain: 0.08 });
+      break;
+    case "arcade-goal":
+      [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5].forEach((f, i) => tone(c, master, f, t + i * 0.08, 0.1, { type: "square", gain: 0.07 }));
+      tone(c, master, 1318.5, t + 0.48, 0.5, { type: "square", gain: 0.07 });
+      tone(c, master, 659.25, t + 0.48, 0.5, { type: "triangle", gain: 0.1 });
+      break;
+    case "cowbell-change":
+      cowbell(c, master, t, 0.22);
+      break;
+    case "cowbell-goal":
+      cowbell(c, master, t, 0.2);
+      cowbell(c, master, t + 0.18, 0.2);
+      cowbell(c, master, t + 0.36, 0.24, 1.12);
       break;
   }
 }

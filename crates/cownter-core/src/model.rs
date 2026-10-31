@@ -247,6 +247,9 @@ pub struct NumberFormat {
 pub struct Sounds {
     pub on_change: Option<String>,
     pub on_goal: Option<String>,
+    /// Sound pack for this entry; None uses the global pack.
+    #[serde(default)]
+    pub pack: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

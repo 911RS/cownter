@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, errorText, onPushChanged } from "../core/api";
-import { SOUNDS, playSound } from "../core/sounds";
+import { PACKS, ROLE_DEFAULT, SOUNDS, playSound, resolveSound } from "../core/sounds";
 import type { DisplayConfig, EntryView, PushInfo } from "../core/types";
 import logo from "../../assets/branding/cownter-symbol.png";
 import { curlExample, maskToken, parsePort } from "./push";
@@ -122,7 +122,30 @@ export function GeneralPage({ cfg, views, keyring, onChange }: { cfg: DisplayCon
         <Row label="Mute all sounds">
           <Toggle checked={cfg.muted} onChange={(muted) => onChange({ ...cfg, muted })} />
         </Row>
-        <Row label="Preview" hint="Choose sounds per number in its settings.">
+        <Row label="Sound pack" hint="Soft plays the sound each number picks. Other packs give every number the pack's own sounds; a number can pick its own pack.">
+          <select value={cfg.soundPack} onChange={(e) => onChange({ ...cfg, soundPack: e.target.value })}>
+            {PACKS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row label="Preview pack">
+          <div className="sound-grid">
+            {PACKS.map((p) => (
+              <span key={p.id} className="pack-preview">
+                <span className="pack-name">{p.label}</span>
+                {(["change", "goal"] as const).map((role) => (
+                  <button type="button" key={role} className="pill-btn" onClick={() => playSound(resolveSound(role, ROLE_DEFAULT[role], p.id), cfg.muted ? 0 : cfg.volume)}>
+                    {role === "change" ? "Change" : "Goal"}
+                  </button>
+                ))}
+              </span>
+            ))}
+          </div>
+        </Row>
+        <Row label="Soft sounds" hint="Choose sounds per number in its settings.">
           <div className="sound-grid">
             {SOUNDS.map((s) => (
               <button type="button" key={s.id} className="pill-btn" onClick={() => playSound(s.id, cfg.muted ? 0 : cfg.volume)}>

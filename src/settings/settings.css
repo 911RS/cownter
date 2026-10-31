@@ -224,6 +224,8 @@ textarea { resize: vertical; font-family: "JetBrains Mono", monospace; font-size
 .pill-btn:hover { color: var(--ink); border-color: #4a4b53; }
 .pill-btn.on { background: var(--blue-soft); border-color: var(--blue); color: #c9d7ff; }
 .sound-grid { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; max-width: 320px; }
+.pack-preview { display: inline-flex; align-items: center; gap: 4px; }
+.pack-name { font-size: 11px; color: var(--ink-2); margin-right: 2px; }
 
 .cats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .showroom { position: relative; border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden; background: var(--panel); outline: none; }

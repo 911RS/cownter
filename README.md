@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/form-island.png" alt="The island widget" width="620">
+  <img src="docs/screenshots/hero.png" alt="The island widget" width="620">
 </p>
 
 ## Contents

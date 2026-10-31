@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/screenshots/readme-banner.png" alt="Cownter: the numbers you care about, always in view. A tiny desktop widget that polls any API and puts the number on your screen." width="100%">
+  <img src="docs/screenshots/cownter-banner-2.png" alt="Cownter: the numbers you care about, always in view. A tiny desktop widget that polls any API and puts the number on your screen." width="100%">
 </p>
 
 <p align="center">

@@ -230,7 +230,15 @@
 .b-pet { display: flex; flex-direction: column; align-items: flex-end; gap: calc(4px * var(--s) * var(--sp, 1)); }
 .b-pet.hop .b-cow { animation: b-hop 0.7s ease-out; }
 @keyframes b-hop { 40% { transform: translateY(calc(-14px * var(--s))) rotate(-4deg); } }
-.b-cow { width: calc(72px * var(--s)); height: calc(63px * var(--s)); filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35)); }
+.b-cow { width: calc(72px * var(--s)); height: calc(63px * var(--s)); filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35)); transition: width 0.6s cubic-bezier(0.3, 1.6, 0.5, 1), height 0.6s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.b-pet-body { position: relative; display: flex; align-items: flex-end; justify-content: center; width: calc(72px * var(--s)); height: calc(63px * var(--s)); }
+.b-cow.st-egg { width: calc(46px * var(--s)); height: calc(40px * var(--s)); transform-origin: 50% 100%; animation: b-wobble 3.2s ease-in-out infinite; }
+.b-cow.st-baby { width: calc(44px * var(--s)); height: calc(39px * var(--s)); }
+.b-cow.st-young { width: calc(58px * var(--s)); height: calc(51px * var(--s)); }
+@keyframes b-wobble { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(-7deg); } 84% { transform: rotate(6deg); } 92% { transform: rotate(-3deg); } }
+.b-pet.grew .b-cow { animation: b-grow 0.8s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes b-grow { 0% { transform: scale(0.7); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.b-pet-fx .fx { top: 35%; }
 .b-bubble { position: relative; display: flex; align-items: center; gap: calc(6px * var(--s) * var(--sp, 1)); padding: calc(6px * var(--s)) calc(10px * var(--s)); border-radius: calc(12px * var(--s) * var(--r, 1)); margin-right: calc(30px * var(--s)); white-space: nowrap; }
 .b-bubble::after { content: ""; position: absolute; right: calc(14px * var(--s)); bottom: calc(-6px * var(--s)); border: calc(6px * var(--s)) solid transparent; border-top-color: var(--bg, #000); border-bottom: 0; }
 .b-bubble .up, .b-bubble .down { font-size: calc(11px * var(--s)); font-weight: 700; }

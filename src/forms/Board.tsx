@@ -9,7 +9,8 @@ import { EntryIcon } from "../components/EntryIcon";
 import { Morph } from "../components/Morph";
 import { Spark } from "../components/Spark";
 import { Skin } from "../skins/Skin";
-import { ChangeFx } from "./ChangeFx";
+import { ChangeFx, FxItem } from "./ChangeFx";
+import { PET_STAGES, petStage, petTitle } from "./pet";
 import { formOpt, formOptClasses } from "./options";
 import { Delta, formLook, formScale, GoalLeft, StatusMark, Streak, valueText } from "./common";
 
@@ -34,6 +35,12 @@ interface Change {
   at: number;
 }
 
+interface PetUp {
+  key: number;
+  entryId: number;
+  stage: number;
+}
+
 interface Ctx {
   f: FormCfg;
   s: number;
@@ -48,6 +55,7 @@ interface Ctx {
   feed: Change[];
   now: number;
   trip: number;
+  petUp?: PetUp | null;
   num: (v: EntryView, h: number, compact?: boolean) => React.ReactElement;
   icon: (v: EntryView, size: number) => React.ReactElement | null;
 }
@@ -418,8 +426,11 @@ const LAYOUTS: Record<string, (c: Ctx) => React.ReactNode> = {
   pet: (c) => {
     const last = c.feed[0];
     const v = last && c.now - last.at < 15000 ? last.view : c.cur;
+    const live = v && c.list.find((x) => x.entry.id === v.entry.id);
+    const stage = live ? petStage(live) : 3;
+    const up = c.petUp && v && c.petUp.entryId === v.entry.id ? c.petUp : null;
     return (
-      <div className={"b-pet" + (c.pulse !== null ? " hop" : "")}>
+      <div className={"b-pet" + (c.pulse !== null ? " hop" : "") + (up ? " grew" : "")}>
         {v && (
           <div className="b-panel b-bubble">
             {c.icon(v, 14 * c.s)}
@@ -427,7 +438,14 @@ const LAYOUTS: Record<string, (c: Ctx) => React.ReactNode> = {
             {last && v === last.view ? <span className={last.diff > 0 ? "up" : "down"}>{formatDelta(last.diff, v.entry.format)}</span> : <Delta v={v} />}
           </div>
         )}
-        <Cow />
+        <span className="b-pet-body" title={live ? petTitle(live) : undefined}>
+          <Cow stage={stage} />
+          {up && (
+            <span className="fx-layer b-pet-fx" key={up.key}>
+              <FxItem fx="confetti" text={PET_STAGES[up.stage].label + "!"} up />
+            </span>
+          )}
+        </span>
       </div>
     );
   },
@@ -482,17 +500,29 @@ const LAYOUTS: Record<string, (c: Ctx) => React.ReactNode> = {
   ),
 };
 
-function Cow() {
+function Cow({ stage = 3 }: { stage?: number }) {
+  const id = PET_STAGES[stage]?.id ?? "adult";
+  if (id === "egg") {
+    return (
+      <svg className="b-cow st-egg" viewBox="0 0 64 56" aria-hidden>
+        <ellipse cx="32" cy="52" rx="14" ry="3" fill="rgba(0,0,0,0.25)" />
+        <path d="M32 8c10 0 17 16 17 27s-8 17-17 17-17-6-17-17S22 8 32 8z" fill="#fff" stroke="#1d1d1d" strokeWidth="2" />
+        <path d="M24 26c3-3 7-2 7 1s-4 5-7 3zM36 38c3-2 7-1 6 2s-5 4-6-2zM37 18c2-1 4 0 3 2s-3 2-3-2z" fill="#1d1d1d" />
+        <path d="M22 33l4-3 3 3 4-3 3 3" fill="none" stroke="#c9a46a" strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    );
+  }
   return (
-    <svg className="b-cow" viewBox="0 0 64 56" aria-hidden>
+    <svg className={"b-cow st-" + id} viewBox="0 0 64 56" aria-hidden>
       <ellipse cx="32" cy="40" rx="22" ry="13" fill="#fff" stroke="#1d1d1d" strokeWidth="2" />
       <path d="M18 36c3-4 8-4 9 0s-4 7-9 4zM38 44c3-3 8-2 8 2s-6 5-8-2z" fill="#1d1d1d" />
-      <path d="M14 14l-6-6M50 14l6-6" stroke="#c9a46a" strokeWidth="3" strokeLinecap="round" />
+      {id !== "baby" && <path d={id === "young" ? "M16 13l-3-3M48 13l3-3" : "M14 14l-6-6M50 14l6-6"} stroke="#c9a46a" strokeWidth="3" strokeLinecap="round" />}
       <ellipse cx="32" cy="22" rx="16" ry="13" fill="#fff" stroke="#1d1d1d" strokeWidth="2" />
       <ellipse cx="32" cy="29" rx="10" ry="6" fill="#ffb3c7" stroke="#1d1d1d" strokeWidth="1.5" />
       <circle cx="28" cy="29" r="1.4" fill="#1d1d1d" />
       <circle cx="36" cy="29" r="1.4" fill="#1d1d1d" />
       <path d="M17 52v-4M47 52v-4" stroke="#1d1d1d" strokeWidth="3" strokeLinecap="round" />
+      {id === "crowned" && <path d="M23 10l-2-9 6 4 5-5 5 5 6-4-2 9z" fill="#ffd24d" stroke="#8a6410" strokeWidth="1.2" strokeLinejoin="round" />}
     </svg>
   );
 }
@@ -513,6 +543,22 @@ export function Board({ id }: { id: string }) {
     pulseTimer.current = setTimeout(() => setPulse(null), 1400);
   });
   const now = useNow(id === "feed" || id === "pet" ? 10000 : 60000);
+  const stages = useRef(new Map<number, number>());
+  const [petUp, setPetUp] = useState<PetUp | null>(null);
+  useEffect(() => {
+    if (id !== "pet") return;
+    for (const v of views.values()) {
+      const st = petStage(v);
+      const was = stages.current.get(v.entry.id);
+      stages.current.set(v.entry.id, st);
+      if (was !== undefined && st > was) setPetUp({ key: ++seq.current, entryId: v.entry.id, stage: st });
+    }
+  }, [id, views]);
+  useEffect(() => {
+    if (!petUp) return;
+    const t = setTimeout(() => setPetUp(null), 2000);
+    return () => clearTimeout(t);
+  }, [petUp?.key]);
   const [open, setOpen] = useState(false);
   const leave = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [idx, setIdx] = useState(0);
@@ -566,6 +612,7 @@ export function Board({ id }: { id: string }) {
     feed,
     now,
     trip: Math.round((window.innerWidth + 320 * s) / 70),
+    petUp,
     num: (v, h, compact) => <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v, compact)} height={h * 1.15} status={v.status} />,
     icon: (v, size) => (f.showIcons ? <EntryIcon icon={v.entry.icon} size={size} /> : null),
   };

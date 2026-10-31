@@ -4,7 +4,7 @@ use cownter_core::secrets::{MemorySecrets, SecretStore};
 use cownter_core::sources::{BaseUrls, FetchError, Fetcher};
 use std::sync::Arc;
 use std::time::Duration;
-use wiremock::matchers::{header, method, path, query_param};
+use wiremock::matchers::{body_partial_json, header, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 fn fetcher(secrets: &[(&str, &str)], server: &MockServer) -> Fetcher {
@@ -14,6 +14,12 @@ fn fetcher(secrets: &[(&str, &str)], server: &MockServer) -> Fetcher {
         github: Some(server.uri()),
         stripe: Some(server.uri()),
         shopify: Some(server.uri()),
+        plausible: Some(server.uri()),
+        npm: Some(server.uri()),
+        gumroad: Some(server.uri()),
+        lemonsqueezy: Some(server.uri()),
+        producthunt: Some(server.uri()),
+        discord: Some(server.uri()),
     })
 }
 
@@ -279,4 +285,138 @@ async fn shopify_count() {
     assert_eq!(get(&f, &cfg).await.unwrap(), 37.0);
     let bad = SourceCfg::Shopify { shop: "not a shop".into(), token: "sh".into() };
     assert!(matches!(get(&f, &bad).await.unwrap_err(), FetchError::Config(_)));
+}
+
+#[tokio::test]
+async fn plausible_visitors_and_realtime() {
+    let server = MockServer::start().await;
+    Mock::given(path("/api/v1/stats/aggregate"))
+        .and(header("Authorization", "Bearer pk"))
+        .and(query_param("site_id", "example.com"))
+        .and(query_param("period", "day"))
+        .and(query_param("metrics", "visitors"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"results": {"visitors": {"value": 312}}})))
+        .mount(&server)
+        .await;
+    Mock::given(path("/api/v1/stats/realtime/visitors"))
+        .and(header("Authorization", "Bearer pk"))
+        .and(query_param("site_id", "example.com"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("17"))
+        .mount(&server)
+        .await;
+    let f = fetcher(&[("pl", "pk")], &server);
+    let day = SourceCfg::Plausible { site_id: "https://example.com/".into(), metric: PlausibleMetric::VisitorsToday, api_key: "pl".into() };
+    assert_eq!(get(&f, &day).await.unwrap(), 312.0);
+    let now = SourceCfg::Plausible { site_id: "example.com".into(), metric: PlausibleMetric::Realtime, api_key: "pl".into() };
+    assert_eq!(get(&f, &now).await.unwrap(), 17.0);
+    let bad = SourceCfg::Plausible { site_id: " ".into(), metric: PlausibleMetric::Realtime, api_key: "pl".into() };
+    assert!(matches!(get(&f, &bad).await.unwrap_err(), FetchError::Config(_)));
+}
+
+#[tokio::test]
+async fn npm_weekly_downloads() {
+    let server = MockServer::start().await;
+    Mock::given(path("/downloads/point/last-week/react"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"downloads": 25_000_000, "package": "react"})))
+        .mount(&server)
+        .await;
+    Mock::given(path("/downloads/point/last-week/@tauri-apps/api"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"downloads": 410_000})))
+        .mount(&server)
+        .await;
+    Mock::given(path("/downloads/point/last-week/nope")).respond_with(ResponseTemplate::new(404)).mount(&server).await;
+    let f = fetcher(&[], &server);
+    assert_eq!(get(&f, &SourceCfg::Npm { package: "react".into() }).await.unwrap(), 25_000_000.0);
+    let scoped = SourceCfg::Npm { package: "https://www.npmjs.com/package/@tauri-apps/api".into() };
+    assert_eq!(get(&f, &scoped).await.unwrap(), 410_000.0);
+    let missing = get(&f, &SourceCfg::Npm { package: "nope".into() }).await.unwrap_err();
+    assert!(matches!(missing, FetchError::Parse(m) if m.contains("not found")));
+    for bad in ["", "Bad Name", "@/x", "@scope"] {
+        assert!(matches!(get(&f, &SourceCfg::Npm { package: bad.into() }).await.unwrap_err(), FetchError::Config(_)), "{bad}");
+    }
+}
+
+#[tokio::test]
+async fn gumroad_sums_products() {
+    let server = MockServer::start().await;
+    Mock::given(path("/v2/products"))
+        .and(query_param("access_token", "gt"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "success": true,
+            "products": [
+                {"id": "a", "sales_count": 12, "sales_usd_cents": 12_000},
+                {"id": "b", "sales_count": 3, "sales_usd_cents": 1_550},
+                {"id": "c"}
+            ]
+        })))
+        .mount(&server)
+        .await;
+    let f = fetcher(&[("gr", "gt")], &server);
+    assert_eq!(get(&f, &SourceCfg::Gumroad { metric: GumroadMetric::Sales, token: "gr".into() }).await.unwrap(), 15.0);
+    assert_eq!(get(&f, &SourceCfg::Gumroad { metric: GumroadMetric::Revenue, token: "gr".into() }).await.unwrap(), 135.5);
+}
+
+#[tokio::test]
+async fn lemon_squeezy_store_totals() {
+    let server = MockServer::start().await;
+    Mock::given(path("/v1/stores"))
+        .and(header("Authorization", "Bearer lk"))
+        .and(header("Accept", "application/vnd.api+json"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "data": [
+                {"type": "stores", "id": "1", "attributes": {"total_sales": 40, "total_revenue": 99_900, "thirty_day_sales": 4, "thirty_day_revenue": 7_996}},
+                {"type": "stores", "id": "2", "attributes": {"total_sales": 2, "total_revenue": 1_000, "thirty_day_sales": 0, "thirty_day_revenue": 0}}
+            ]
+        })))
+        .mount(&server)
+        .await;
+    let f = fetcher(&[("ls", "lk")], &server);
+    let of = |metric| SourceCfg::LemonSqueezy { metric, api_key: "ls".into() };
+    assert_eq!(get(&f, &of(LemonSqueezyMetric::Sales)).await.unwrap(), 42.0);
+    assert_eq!(get(&f, &of(LemonSqueezyMetric::Revenue)).await.unwrap(), 1009.0);
+    assert_eq!(get(&f, &of(LemonSqueezyMetric::Revenue30d)).await.unwrap(), 79.96);
+}
+
+#[tokio::test]
+async fn product_hunt_votes() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v2/api/graphql"))
+        .and(header("Authorization", "Bearer ph"))
+        .and(body_partial_json(serde_json::json!({"variables": {"slug": "cownter"}})))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"data": {"post": {"votesCount": 512}}})))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v2/api/graphql"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"data": {"post": null}})))
+        .mount(&server)
+        .await;
+    let f = fetcher(&[("pt", "ph")], &server);
+    let cfg = SourceCfg::ProductHunt { post: "https://www.producthunt.com/posts/cownter".into(), token: "pt".into() };
+    assert_eq!(get(&f, &cfg).await.unwrap(), 512.0);
+    let missing = SourceCfg::ProductHunt { post: "other".into(), token: "pt".into() };
+    assert!(matches!(get(&f, &missing).await.unwrap_err(), FetchError::Parse(m) if m.contains("not found")));
+    let bad = SourceCfg::ProductHunt { post: "a b".into(), token: "pt".into() };
+    assert!(matches!(get(&f, &bad).await.unwrap_err(), FetchError::Config(_)));
+}
+
+#[tokio::test]
+async fn discord_invite_counts() {
+    let server = MockServer::start().await;
+    Mock::given(path("/api/v10/invites/abc123"))
+        .and(query_param("with_counts", "true"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "code": "abc123", "approximate_member_count": 4821, "approximate_presence_count": 377
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(path("/api/v10/invites/gone")).respond_with(ResponseTemplate::new(404)).mount(&server).await;
+    let f = fetcher(&[], &server);
+    let members = SourceCfg::Discord { invite: "https://discord.gg/abc123".into(), metric: DiscordMetric::Members };
+    assert_eq!(get(&f, &members).await.unwrap(), 4821.0);
+    let online = SourceCfg::Discord { invite: "abc123".into(), metric: DiscordMetric::Online };
+    assert_eq!(get(&f, &online).await.unwrap(), 377.0);
+    let gone = SourceCfg::Discord { invite: "gone".into(), metric: DiscordMetric::Members };
+    assert!(matches!(get(&f, &gone).await.unwrap_err(), FetchError::Parse(m) if m.contains("expired")));
 }

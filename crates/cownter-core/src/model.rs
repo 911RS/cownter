@@ -82,6 +82,35 @@ impl GitHubMetric {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PlausibleMetric {
+    VisitorsToday,
+    Realtime,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum GumroadMetric {
+    Sales,
+    Revenue,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum LemonSqueezyMetric {
+    Sales,
+    Revenue,
+    Revenue30d,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DiscordMetric {
+    Members,
+    Online,
+}
+
 /// Secret-bearing fields (`api_key`, `token`) hold keyring names, never secret values.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -112,6 +141,30 @@ pub enum SourceCfg {
     Stripe {
         api_key: String,
         currency: String,
+    },
+    Plausible {
+        site_id: String,
+        metric: PlausibleMetric,
+        api_key: String,
+    },
+    Npm {
+        package: String,
+    },
+    Gumroad {
+        metric: GumroadMetric,
+        token: String,
+    },
+    LemonSqueezy {
+        metric: LemonSqueezyMetric,
+        api_key: String,
+    },
+    ProductHunt {
+        post: String,
+        token: String,
+    },
+    Discord {
+        invite: String,
+        metric: DiscordMetric,
     },
     Formula {
         expr: String,
@@ -147,8 +200,11 @@ impl SourceCfg {
             SourceCfg::YouTube { api_key, .. } => vec![api_key.clone()],
             SourceCfg::GitHub { token, .. } => token.iter().cloned().collect(),
             SourceCfg::Shopify { token, .. } => vec![token.clone()],
-            SourceCfg::Stripe { api_key, .. } => vec![api_key.clone()],
-            SourceCfg::Formula { .. } | SourceCfg::Push => vec![],
+            SourceCfg::Stripe { api_key, .. }
+            | SourceCfg::Plausible { api_key, .. }
+            | SourceCfg::LemonSqueezy { api_key, .. } => vec![api_key.clone()],
+            SourceCfg::Gumroad { token, .. } | SourceCfg::ProductHunt { token, .. } => vec![token.clone()],
+            SourceCfg::Formula { .. } | SourceCfg::Push | SourceCfg::Npm { .. } | SourceCfg::Discord { .. } => vec![],
         }
     }
 }
@@ -349,6 +405,10 @@ mod tests {
         assert_eq!(j["type"], "youtube");
         assert_eq!(j["channelId"], "UC1");
         assert_eq!(j["apiKey"], "entry-1-apiKey");
+        let ls = SourceCfg::LemonSqueezy { metric: LemonSqueezyMetric::Revenue30d, api_key: "k".into() };
+        assert_eq!(serde_json::to_value(&ls).unwrap(), serde_json::json!({"type": "lemonSqueezy", "metric": "revenue30d", "apiKey": "k"}));
+        let ph: SourceCfg = serde_json::from_str(r#"{"type":"productHunt","post":"cownter","token":"t"}"#).unwrap();
+        assert_eq!(ph.secret_names(), vec!["t".to_string()]);
         assert_eq!(serde_json::to_value(SourceCfg::Push).unwrap(), serde_json::json!({"type": "push"}));
         let back: SourceCfg = serde_json::from_str(r#"{"type":"push"}"#).unwrap();
         assert!(back.is_push());

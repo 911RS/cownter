@@ -1,5 +1,11 @@
 mod custom_url;
+mod discord;
 mod github;
+mod gumroad;
+mod lemonsqueezy;
+mod npm;
+mod plausible;
+mod producthunt;
 mod shopify;
 mod stripe;
 mod youtube;
@@ -43,6 +49,12 @@ pub struct BaseUrls {
     pub github: Option<String>,
     pub stripe: Option<String>,
     pub shopify: Option<String>,
+    pub plausible: Option<String>,
+    pub npm: Option<String>,
+    pub gumroad: Option<String>,
+    pub lemonsqueezy: Option<String>,
+    pub producthunt: Option<String>,
+    pub discord: Option<String>,
 }
 
 #[derive(Clone)]
@@ -142,6 +154,12 @@ impl Fetcher {
             SourceCfg::GitHub { target, metric, token } => github::fetch(self, target, *metric, token.as_deref()).await,
             SourceCfg::Shopify { shop, token } => shopify::fetch(self, shop, token, now).await,
             SourceCfg::Stripe { api_key, currency } => stripe::fetch(self, api_key, currency, now).await,
+            SourceCfg::Plausible { site_id, metric, api_key } => plausible::fetch(self, site_id, *metric, api_key).await,
+            SourceCfg::Npm { package } => npm::fetch(self, package).await,
+            SourceCfg::Gumroad { metric, token } => gumroad::fetch(self, *metric, token).await,
+            SourceCfg::LemonSqueezy { metric, api_key } => lemonsqueezy::fetch(self, *metric, api_key).await,
+            SourceCfg::ProductHunt { post, token } => producthunt::fetch(self, post, token).await,
+            SourceCfg::Discord { invite, metric } => discord::fetch(self, invite, *metric).await,
             SourceCfg::Formula { .. } => Err(FetchError::Config("formulas are computed, not fetched".into())),
             SourceCfg::Push => Err(FetchError::Config("push numbers are sent to Cownter, not fetched".into())),
         }

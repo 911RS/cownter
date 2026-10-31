@@ -17,11 +17,18 @@ const TYPES: { id: SourceType; label: string; hint: string; icon: Icon }[] = [
   { id: "github", label: "GitHub", hint: "Stars, forks, followers", icon: { kind: "builtin", value: "star", bg: "#24292f" } },
   { id: "shopify", label: "Shopify", hint: "Orders today", icon: { kind: "builtin", value: "cart", bg: "#3fa34d" } },
   { id: "stripe", label: "Stripe", hint: "Revenue today", icon: { kind: "builtin", value: "euro", bg: "#635bff" } },
+  { id: "plausible", label: "Plausible", hint: "Site visitors", icon: { kind: "builtin", value: "eye", bg: "#5850ec" } },
+  { id: "npm", label: "npm", hint: "Weekly downloads", icon: { kind: "builtin", value: "download", bg: "#cb3837" } },
+  { id: "gumroad", label: "Gumroad", hint: "Sales, revenue", icon: { kind: "builtin", value: "tag", bg: "#ff90e8" } },
+  { id: "lemonSqueezy", label: "Lemon Squeezy", hint: "Sales, revenue", icon: { kind: "builtin", value: "bag", bg: "#ffc233" } },
+  { id: "productHunt", label: "Product Hunt", hint: "Upvotes on a post", icon: { kind: "builtin", value: "rocket", bg: "#da552f" } },
+  { id: "discord", label: "Discord", hint: "Members, online now", icon: { kind: "builtin", value: "chat", bg: "#5865f2" } },
   { id: "formula", label: "Formula", hint: "Math on other numbers", icon: { kind: "builtin", value: "chart", bg: "#7a5af8" } },
   { id: "push", label: "Push", hint: "Sent by your scripts or the CLI", icon: { kind: "builtin", value: "bolt", bg: "#e8862b" } },
 ];
 
 const TEXT_TYPES: SourceType[] = ["customUrl", "push"];
+const KEYLESS_TYPES: SourceType[] = ["formula", "github", "push", "npm", "discord"];
 
 const DEFAULT_NAMES: Record<SourceType, string> = {
   customUrl: "",
@@ -29,6 +36,12 @@ const DEFAULT_NAMES: Record<SourceType, string> = {
   github: "GitHub stars",
   shopify: "Orders today",
   stripe: "Revenue today",
+  plausible: "Visitors today",
+  npm: "npm downloads",
+  gumroad: "Gumroad sales",
+  lemonSqueezy: "Lemon Squeezy sales",
+  productHunt: "Product Hunt upvotes",
+  discord: "Discord members",
   formula: "",
   push: "",
 };
@@ -49,6 +62,18 @@ function defaultSource(t: SourceType, base: string): SourceCfg {
       return { type: "shopify", shop: "", token: `${base}-token` };
     case "stripe":
       return { type: "stripe", apiKey: `${base}-apiKey`, currency: "EUR" };
+    case "plausible":
+      return { type: "plausible", siteId: "", metric: "visitorsToday", apiKey: `${base}-apiKey` };
+    case "npm":
+      return { type: "npm", package: "" };
+    case "gumroad":
+      return { type: "gumroad", metric: "sales", token: `${base}-token` };
+    case "lemonSqueezy":
+      return { type: "lemonSqueezy", metric: "sales", apiKey: `${base}-apiKey` };
+    case "productHunt":
+      return { type: "productHunt", post: "", token: `${base}-token` };
+    case "discord":
+      return { type: "discord", invite: "", metric: "members" };
     case "formula":
       return { type: "formula", expr: "" };
     case "push":
@@ -79,13 +104,19 @@ function secretNames(s: SourceCfg): string[] {
       return s.headers.filter((h) => h.value.kind === "secret").map((h) => h.value.value);
     case "youtube":
     case "stripe":
+    case "plausible":
+    case "lemonSqueezy":
       return [s.apiKey];
     case "github":
       return s.token ? [s.token] : [];
     case "shopify":
+    case "gumroad":
+    case "productHunt":
       return [s.token];
     case "formula":
     case "push":
+    case "npm":
+    case "discord":
       return [];
   }
 }
@@ -263,7 +294,7 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
             ))}
           </div>
 
-          {!keyring && src.type !== "formula" && src.type !== "github" && src.type !== "push" && (
+          {!keyring && !KEYLESS_TYPES.includes(src.type) && (
             <Banner kind="error">Your system keyring is not available, so API keys cannot be stored safely. Unlock or install a keyring, then reopen Cownter.</Banner>
           )}
 
@@ -396,6 +427,85 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
               </Field>
               <Field label="Currency">
                 <input value={src.currency} maxLength={3} onChange={(e) => setSource({ ...src, currency: e.target.value.toUpperCase() })} />
+              </Field>
+            </div>
+          )}
+
+          {src.type === "plausible" && (
+            <div className="grid2">
+              <Field label="Site" hint="The domain as it is added in Plausible.">
+                <input value={src.siteId} placeholder="example.com" onChange={(e) => setSource({ ...src, siteId: e.target.value })} />
+              </Field>
+              <Field label="Metric">
+                <select value={src.metric} onChange={(e) => setSource({ ...src, metric: e.target.value as typeof src.metric })}>
+                  <option value="visitorsToday">Visitors today</option>
+                  <option value="realtime">Visitors right now</option>
+                </select>
+              </Field>
+              <Field label="Stats API key" wide hint="Plausible → Account settings → API keys.">
+                <SecretInput name={src.apiKey} saved={!!saved[src.apiKey]} value={secrets[src.apiKey] ?? ""} onChange={setSecret} placeholder="API key" />
+              </Field>
+            </div>
+          )}
+
+          {src.type === "npm" && (
+            <div className="grid2">
+              <Field label="Package" wide hint="Downloads over the last 7 days. No key needed.">
+                <input value={src.package} placeholder="react or @scope/name" onChange={(e) => setSource({ ...src, package: e.target.value })} />
+              </Field>
+            </div>
+          )}
+
+          {src.type === "gumroad" && (
+            <div className="grid2">
+              <Field label="Metric" hint="Summed over all your products.">
+                <select value={src.metric} onChange={(e) => setSource({ ...src, metric: e.target.value as typeof src.metric })}>
+                  <option value="sales">Sales</option>
+                  <option value="revenue">Revenue (USD)</option>
+                </select>
+              </Field>
+              <Field label="Access token" hint="Settings → Advanced → Applications: create an application and generate a token.">
+                <SecretInput name={src.token} saved={!!saved[src.token]} value={secrets[src.token] ?? ""} onChange={setSecret} placeholder="Access token" />
+              </Field>
+            </div>
+          )}
+
+          {src.type === "lemonSqueezy" && (
+            <div className="grid2">
+              <Field label="Metric" hint="Summed over all your stores, in the store currency.">
+                <select value={src.metric} onChange={(e) => setSource({ ...src, metric: e.target.value as typeof src.metric })}>
+                  <option value="sales">Sales (all time)</option>
+                  <option value="revenue">Revenue (all time)</option>
+                  <option value="revenue30d">Revenue (last 30 days)</option>
+                </select>
+              </Field>
+              <Field label="API key" hint="Settings → API.">
+                <SecretInput name={src.apiKey} saved={!!saved[src.apiKey]} value={secrets[src.apiKey] ?? ""} onChange={setSecret} placeholder="API key" />
+              </Field>
+            </div>
+          )}
+
+          {src.type === "productHunt" && (
+            <div className="grid2">
+              <Field label="Post" hint="The post link or the slug after /posts/.">
+                <input value={src.post} placeholder="https://www.producthunt.com/posts/…" onChange={(e) => setSource({ ...src, post: e.target.value })} />
+              </Field>
+              <Field label="Developer token" hint="API dashboard → add an application → Developer token.">
+                <SecretInput name={src.token} saved={!!saved[src.token]} value={secrets[src.token] ?? ""} onChange={setSecret} placeholder="Developer token" />
+              </Field>
+            </div>
+          )}
+
+          {src.type === "discord" && (
+            <div className="grid2">
+              <Field label="Invite" hint="An invite link that never expires. No key needed.">
+                <input value={src.invite} placeholder="https://discord.gg/…" onChange={(e) => setSource({ ...src, invite: e.target.value })} />
+              </Field>
+              <Field label="Metric" hint="Discord gives approximate counts.">
+                <select value={src.metric} onChange={(e) => setSource({ ...src, metric: e.target.value as typeof src.metric })}>
+                  <option value="members">Members</option>
+                  <option value="online">Online now</option>
+                </select>
               </Field>
             </div>
           )}

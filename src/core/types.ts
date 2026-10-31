@@ -14,6 +14,10 @@ export interface Header {
 
 export type YouTubeMetric = "subscribers" | "views" | "videos";
 export type GitHubMetric = "stars" | "forks" | "openIssues" | "watchers" | "followers" | "publicRepos";
+export type PlausibleMetric = "visitorsToday" | "realtime";
+export type GumroadMetric = "sales" | "revenue";
+export type LemonSqueezyMetric = "sales" | "revenue" | "revenue30d";
+export type DiscordMetric = "members" | "online";
 
 export type SourceCfg =
   | { type: "customUrl"; url: string; method: string; headers: Header[]; body: string | null; pick: Pick }
@@ -21,6 +25,12 @@ export type SourceCfg =
   | { type: "github"; target: string; metric: GitHubMetric; token: string | null }
   | { type: "shopify"; shop: string; token: string }
   | { type: "stripe"; apiKey: string; currency: string }
+  | { type: "plausible"; siteId: string; metric: PlausibleMetric; apiKey: string }
+  | { type: "npm"; package: string }
+  | { type: "gumroad"; metric: GumroadMetric; token: string }
+  | { type: "lemonSqueezy"; metric: LemonSqueezyMetric; apiKey: string }
+  | { type: "productHunt"; post: string; token: string }
+  | { type: "discord"; invite: string; metric: DiscordMetric }
   | { type: "formula"; expr: string }
   | { type: "push" };
 

@@ -6,6 +6,7 @@ import { useDisplay, useEntries, useNow, useWidgetSize } from "../core/hooks";
 import { selectEntries } from "../core/select";
 import type { EntryView, FormCfg } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
+import { Morph } from "../components/Morph";
 import { Spark } from "../components/Spark";
 import { Skin } from "../skins/Skin";
 import { ChangeFx } from "./ChangeFx";
@@ -40,6 +41,9 @@ interface Ctx {
   cur: EntryView | null;
   idx: number;
   open: boolean;
+  /** True in a real widget window, false in settings previews. */
+  live: boolean;
+  leave?: () => void;
   pulse: number | null;
   feed: Change[];
   now: number;
@@ -254,20 +258,24 @@ const LAYOUTS: Record<string, (c: Ctx) => React.ReactNode> = {
     </div>
   ),
   notch: (c) => (
-    <div className="b-panel b-notch">
-      {c.open ? (
-        <List c={c} />
-      ) : (
-        c.cur && (
+    <Morph
+      live={c.live}
+      open={c.open}
+      position={c.f.position}
+      className="b-panel b-notch"
+      onLeave={c.leave}
+      closed={
+        c.cur ? (
           <div className="b-line">
             {c.icon(c.cur, 16 * c.s)}
             {c.num(c.cur, 14 * c.s)}
             <Delta v={c.cur} />
             <Dots c={c} />
           </div>
-        )
-      )}
-    </div>
+        ) : null
+      }
+      opened={c.list.length ? <List c={c} /> : null}
+    />
   ),
   wings: (c) => {
     const half = Math.ceil(c.list.length / 2);
@@ -550,6 +558,8 @@ export function Board({ id }: { id: string }) {
     cur,
     idx: n ? idx % n : 0,
     open,
+    live: true,
+    leave: () => setOpen(false),
     pulse,
     feed,
     now,
@@ -595,7 +605,7 @@ export function FormPreview({ id, f, views }: { id: string; f: FormCfg; views: E
   const num = (v: EntryView, h: number, compact?: boolean) => <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v, compact)} height={h * 1.15} status={v.status} />;
   const icon = (v: EntryView, size: number) => (f.showIcons ? <EntryIcon icon={v.entry.icon} size={size} /> : null);
   const feed: Change[] = list.slice(0, 3).map((v, i) => ({ key: i, view: v, diff: v.deltaToday || 1, at: Date.now() - (i + 1) * 60000 }));
-  const c: Ctx = { f, s, list, cur, idx: 0, open: false, pulse: null, feed, now: Date.now(), trip: 0, num, icon };
+  const c: Ctx = { f, s, list, cur, idx: 0, open: false, live: false, pulse: null, feed, now: Date.now(), trip: 0, num, icon };
 
   let body: React.ReactNode;
   if (id === "island") {

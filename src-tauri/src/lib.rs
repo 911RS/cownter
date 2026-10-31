@@ -1,5 +1,6 @@
 mod commands;
 mod display;
+mod hit;
 mod hotkeys;
 mod pixfont;
 mod state;
@@ -95,6 +96,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.manage(AppState { store: store.clone(), scheduler, secrets, fetcher, display: Mutex::new(display.clone()) });
     forward_events(handle.clone(), rx);
     tray::build(&handle)?;
+    hit::start(&handle);
     if let Err(e) = hotkeys::register(&handle, &display) {
         eprintln!("{e}");
     }
@@ -129,6 +131,7 @@ pub fn run() {
             commands::get_display,
             commands::widget_resize,
             commands::widget_done,
+            commands::widget_hit,
             commands::open_settings,
             commands::refresh_all,
             commands::save_entry,

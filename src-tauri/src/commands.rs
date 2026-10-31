@@ -293,6 +293,14 @@ pub fn widget_resize(app: AppHandle, window: WebviewWindow, state: State<AppStat
 }
 
 #[tauri::command]
+pub fn widget_hit(window: WebviewWindow, rect: crate::hit::Rect) -> R<()> {
+    if window.label() == "settings" {
+        return Ok(());
+    }
+    crate::hit::set(&window, rect)
+}
+
+#[tauri::command]
 pub fn widget_done(window: WebviewWindow) -> R<()> {
     if window.label() == "settings" {
         return Ok(());

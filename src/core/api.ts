@@ -34,6 +34,7 @@ export const api = {
   saveDisplay: (cfg: DisplayConfig) => invoke<DisplayConfig>("save_display", { cfg }),
   widgetResize: (width: number, height: number, show: boolean) =>
     invoke<void>("widget_resize", { width, height, show }),
+  widgetHit: (rect: { x: number; y: number; w: number; h: number }) => invoke<void>("widget_hit", { rect }),
   widgetDone: () => invoke<void>("widget_done"),
   openSettings: () => invoke<void>("open_settings"),
   refreshAll: () => invoke<void>("refresh_all"),

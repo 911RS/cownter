@@ -1,0 +1,13 @@
+node_modules/
+dist/
+target/
+src-tauri/gen/
+*.tsbuildinfo
+.superpowers/
+.playwright-mcp/
+output/
+docs/superpowers/
+IDEA.md
+assets/branding/*.json
+assets/branding/history/
+assets/branding/references/

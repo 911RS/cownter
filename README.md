@@ -1,11 +1,5 @@
 <p align="center">
-  <img src="assets/branding/cownter-logo.png" alt="Cownter" width="340">
-</p>
-
-<p align="center">
-  <b>The numbers you care about, always in view.</b><br>
-  A tiny desktop widget that polls any API and shows the number on your screen.<br>
-  Subscribers, stars, orders, revenue, or any URL you paste.
+  <img src="docs/screenshots/banner.png" alt="Cownter: the numbers you care about, always in view. A tiny desktop widget that polls any API and puts the number on your screen." width="100%">
 </p>
 
 <p align="center">
@@ -14,10 +8,6 @@
   <img alt="Built with Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db">
   <img alt="Rust and React" src="https://img.shields.io/badge/Rust%20%2B%20React-%E2%9D%A4-orange">
   <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-3fa34d">
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/hero-scene.png" alt="Cownter widgets on a desktop" width="820">
 </p>
 
 ## Contents

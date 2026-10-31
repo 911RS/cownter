@@ -18,8 +18,12 @@ const KINDS: { id: AlertKind; label: string; def: number }[] = [
   { id: "dropBy", label: "goes down by", def: 1 },
   { id: "above", label: "goes above", def: 100 },
   { id: "below", label: "goes below", def: 100 },
+  { id: "risePct", label: "rises by %", def: 5 },
+  { id: "dropPct", label: "drops by %", def: 5 },
   { id: "changePct", label: "changes by %", def: 10 },
 ];
+
+const WINDOWED: AlertKind[] = ["changePct", "risePct", "dropPct"];
 
 const EFFECTS: { id: AlertEffect; label: string; icon: string }[] = [
   { id: "", label: "None", icon: "∅" },
@@ -39,13 +43,15 @@ const TEMPLATES: { label: string; alert: Pick<Alert, "kind" | "threshold" | "not
   { label: "Celebrate +100", alert: { kind: "riseBy", threshold: 100, notify: true, effect: "confetti" } },
   { label: "Warn on a drop", alert: { kind: "dropBy", threshold: 1, notify: false, effect: "shake" } },
   { label: "Big swing", alert: { kind: "changePct", threshold: 10, notify: true, effect: "flash" } },
+  { label: "Sudden 5% drop", alert: { kind: "dropPct", threshold: 5, notify: true, effect: "shake" } },
 ];
 
 function sample(a: Pick<Alert, "kind" | "threshold">): { text: string; up: boolean } {
   if (a.kind === "riseBy") return { text: `+${a.threshold}`, up: true };
   if (a.kind === "dropBy") return { text: `-${a.threshold}`, up: false };
   if (a.kind === "below") return { text: "-1", up: false };
-  if (a.kind === "changePct") return { text: `+${a.threshold}%`, up: true };
+  if (a.kind === "changePct" || a.kind === "risePct") return { text: `+${a.threshold}%`, up: true };
+  if (a.kind === "dropPct") return { text: `-${a.threshold}%`, up: false };
   return { text: "+1", up: true };
 }
 
@@ -72,6 +78,10 @@ function checks(a: Alert, all: Alert[], view?: EntryView): string[] {
     if (a.kind === "below" && v < a.threshold) out.push(`It is already below (${formatValue(v, view.entry.format)}), so it fires after it rises above and drops again.`);
   }
   if ((a.kind === "riseBy" || a.kind === "dropBy") && a.threshold > 1) out.push(`Fires when a single refresh brings a change of ${a.threshold} or more.`);
+  if (a.kind === "risePct" || a.kind === "dropPct") {
+    const w = WINDOWS.find((x) => x.s === a.windowS)?.label ?? "the window";
+    out.push(`Compares with the ${a.kind === "risePct" ? "lowest" : "highest"} value in the last ${w}. Fires once, then again after it recovers.`);
+  }
   return out;
 }
 
@@ -149,7 +159,7 @@ export function AlertsEditor({ entryId, view }: { entryId: number; view?: EntryV
                 min={a.kind === "above" || a.kind === "below" ? undefined : 0}
                 onChange={(v) => v !== null && (a.kind === "above" || a.kind === "below" || v > 0) && save({ ...a, threshold: v })}
               />
-              {a.kind === "changePct" && (
+              {WINDOWED.includes(a.kind) && (
                 <select value={a.windowS} onChange={(e) => save({ ...a, windowS: Number(e.target.value) })}>
                   {WINDOWS.map((w) => (
                     <option key={w.s} value={w.s}>

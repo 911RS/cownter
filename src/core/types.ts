@@ -100,7 +100,7 @@ export interface Recap {
   items: RecapItem[];
 }
 
-export type AlertKind = "above" | "below" | "changePct" | "riseBy" | "dropBy";
+export type AlertKind = "above" | "below" | "changePct" | "riseBy" | "dropBy" | "risePct" | "dropPct";
 export type AlertEffect = "" | "float" | "pop" | "burst" | "confetti" | "shake" | "glow" | "flash" | "zoom" | "rain";
 
 export interface Alert {

@@ -281,6 +281,8 @@ pub enum AlertKind {
     ChangePct,
     RiseBy,
     DropBy,
+    RisePct,
+    DropPct,
 }
 
 impl AlertKind {
@@ -291,6 +293,8 @@ impl AlertKind {
             AlertKind::ChangePct => "changePct",
             AlertKind::RiseBy => "riseBy",
             AlertKind::DropBy => "dropBy",
+            AlertKind::RisePct => "risePct",
+            AlertKind::DropPct => "dropPct",
         }
     }
 
@@ -301,6 +305,8 @@ impl AlertKind {
             "changePct" => Some(AlertKind::ChangePct),
             "riseBy" => Some(AlertKind::RiseBy),
             "dropBy" => Some(AlertKind::DropBy),
+            "risePct" => Some(AlertKind::RisePct),
+            "dropPct" => Some(AlertKind::DropPct),
             _ => None,
         }
     }

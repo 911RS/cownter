@@ -355,7 +355,7 @@ impl Store {
         if !a.threshold.is_finite() {
             return Err(StoreError::Invalid("threshold must be a number".into()));
         }
-        if a.kind == AlertKind::ChangePct && (a.threshold <= 0.0 || a.window_s == 0) {
+        if matches!(a.kind, AlertKind::ChangePct | AlertKind::RisePct | AlertKind::DropPct) && (a.threshold <= 0.0 || a.window_s == 0) {
             return Err(StoreError::Invalid("change alerts need a percentage above 0 and a time window".into()));
         }
         if matches!(a.kind, AlertKind::RiseBy | AlertKind::DropBy) && a.threshold <= 0.0 {

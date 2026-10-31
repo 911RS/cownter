@@ -104,6 +104,16 @@ fn fmt_num(v: f64) -> String {
     if v.fract() == 0.0 && v.abs() < 1e15 { format!("{}", v as i64) } else { format!("{v:.2}") }
 }
 
+fn fmt_window(s: u32) -> String {
+    let (n, unit) = match s {
+        s if s % 86400 == 0 => (s / 86400, "day"),
+        s if s % 3600 == 0 => (s / 3600, "hour"),
+        s if s % 60 == 0 => (s / 60, "minute"),
+        s => (s, "second"),
+    };
+    if n == 1 { format!("1 {unit}") } else { format!("{n} {unit}s") }
+}
+
 /// Alerts, goal, all-time high and change events for a fresh live value.
 fn value_events(store: &Store, entry: &Entry, value: f64, prev: Option<f64>, ts: i64) -> Result<Vec<CoreEvent>> {
     let mut out = Vec::new();
@@ -156,6 +166,41 @@ fn value_events(store: &Store, entry: &Entry, value: f64, prev: Option<f64>, ts:
                             });
                         }
                     }
+                }
+            }
+            AlertKind::RisePct | AlertKind::DropPct => {
+                let up = a.kind == AlertKind::RisePct;
+                let since = ts - a.window_s as i64 * 1000;
+                let mut points: Vec<f64> = store.history(id, since, ts)?.into_iter().map(|(_, v)| v).collect();
+                points.extend(store.value_at_or_before(id, since)?);
+                let reference = if up {
+                    points.iter().copied().reduce(f64::min)
+                } else {
+                    points.iter().copied().reduce(f64::max)
+                };
+                let Some(r) = reference.filter(|r| *r != 0.0) else { continue };
+                let pct = (value - r) / r.abs() * 100.0;
+                let hit = if up { pct >= a.threshold } else { -pct >= a.threshold };
+                if hit && armed {
+                    store.set_alert_state(a.id, false, Some(ts))?;
+                    let word = if up { "rose" } else { "dropped" };
+                    out.push(CoreEvent::AlertFired {
+                        entry_id: id,
+                        alert_id: a.id,
+                        message: format!(
+                            "{} {word} {:.1}% within {} ({})",
+                            entry.name,
+                            pct.abs(),
+                            fmt_window(a.window_s),
+                            fmt_num(value)
+                        ),
+                        value,
+                        diff: Some(value - r),
+                        notify: a.notify,
+                        effect: a.effect.clone(),
+                    });
+                } else if !hit && !armed {
+                    store.set_alert_state(a.id, true, None)?;
                 }
             }
             AlertKind::RiseBy | AlertKind::DropBy => {
@@ -479,6 +524,99 @@ mod tests {
         assert_eq!(n, 1);
         live(&s, id, T0 + 5000, 40.0);
         assert_eq!(count(&live(&s, id, T0 + 6000, 70.0), |e| matches!(e, CoreEvent::AlertFired { .. })), 1);
+    }
+
+    fn fired(evs: &[CoreEvent]) -> usize {
+        count(evs, |e| matches!(e, CoreEvent::AlertFired { .. }))
+    }
+
+    fn pct_alert(s: &Store, id: i64, kind: AlertKind, threshold: f64, window_s: u32) {
+        s.upsert_alert(&Alert { id: 0, entry_id: id, kind, threshold, window_s, enabled: true, last_fired_at: None, notify: true, effect: String::new() }).unwrap();
+    }
+
+    const MIN: i64 = 60_000;
+
+    #[test]
+    fn below_fires_once_on_crossing() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
+        s.upsert_alert(&Alert { id: 0, entry_id: id, kind: AlertKind::Below, threshold: 10.0, window_s: 60, enabled: true, last_fired_at: None, notify: true, effect: String::new() }).unwrap();
+        let n: usize = [12.0, 9.0, 8.0, 7.0].iter().enumerate().map(|(i, v)| fired(&live(&s, id, T0 + i as i64 * 1000, *v))).sum();
+        assert_eq!(n, 1);
+        live(&s, id, T0 + 5000, 11.0);
+        assert_eq!(fired(&live(&s, id, T0 + 6000, 9.5)), 1);
+    }
+
+    #[test]
+    fn drop_pct_fires_once_per_crossing() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
+        pct_alert(&s, id, AlertKind::DropPct, 5.0, 3600);
+        assert_eq!(fired(&live(&s, id, T0, 100.0)), 0);
+        assert_eq!(fired(&live(&s, id, T0 + 10 * MIN, 98.0)), 0);
+        let evs = live(&s, id, T0 + 20 * MIN, 94.0);
+        assert_eq!(count(&evs, |e| matches!(e, CoreEvent::AlertFired { message, diff: Some(d), .. } if message == "a dropped 6.0% within 1 hour (94)" && *d == -6.0)), 1);
+        assert_eq!(fired(&live(&s, id, T0 + 30 * MIN, 90.0)), 0);
+        assert_eq!(fired(&live(&s, id, T0 + 40 * MIN, 99.0)), 0);
+        assert_eq!(fired(&live(&s, id, T0 + 50 * MIN, 93.0)), 1);
+        assert_eq!(fired(&live(&s, id, T0 + 55 * MIN, 92.0)), 0);
+    }
+
+    #[test]
+    fn drop_pct_rearms_when_the_peak_leaves_the_window() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
+        pct_alert(&s, id, AlertKind::DropPct, 5.0, 900);
+        live(&s, id, T0, 100.0);
+        assert_eq!(fired(&live(&s, id, T0 + 5 * MIN, 90.0)), 1);
+        assert_eq!(fired(&live(&s, id, T0 + 30 * MIN, 90.0)), 0);
+        assert_eq!(fired(&live(&s, id, T0 + 35 * MIN, 85.0)), 1);
+    }
+
+    #[test]
+    fn rise_pct_fires_once_per_crossing() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
+        pct_alert(&s, id, AlertKind::RisePct, 10.0, 3600);
+        live(&s, id, T0, 200.0);
+        assert_eq!(fired(&live(&s, id, T0 + 10 * MIN, 210.0)), 0);
+        let evs = live(&s, id, T0 + 20 * MIN, 222.0);
+        assert_eq!(count(&evs, |e| matches!(e, CoreEvent::AlertFired { message, .. } if message == "a rose 11.0% within 1 hour (222)")), 1);
+        assert_eq!(fired(&live(&s, id, T0 + 30 * MIN, 240.0)), 0);
+        assert_eq!(fired(&live(&s, id, T0 + 40 * MIN, 205.0)), 0);
+        assert_eq!(fired(&live(&s, id, T0 + 50 * MIN, 230.0)), 1);
+    }
+
+    #[test]
+    fn pct_alerts_ignore_the_other_direction() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
+        pct_alert(&s, id, AlertKind::RisePct, 5.0, 3600);
+        live(&s, id, T0, 100.0);
+        assert_eq!(fired(&live(&s, id, T0 + MIN, 50.0)), 0);
+        let s2 = Store::open_memory().unwrap();
+        let id2 = s2.insert_entry(&entry("b", url_source()), 0).unwrap();
+        pct_alert(&s2, id2, AlertKind::DropPct, 5.0, 3600);
+        live(&s2, id2, T0, 100.0);
+        assert_eq!(fired(&live(&s2, id2, T0 + MIN, 150.0)), 0);
+    }
+
+    #[test]
+    fn rejects_bad_pct_alerts() {
+        let s = Store::open_memory().unwrap();
+        let id = s.insert_entry(&entry("a", url_source()), 0).unwrap();
+        let a = Alert { id: 0, entry_id: id, kind: AlertKind::DropPct, threshold: 0.0, window_s: 3600, enabled: true, last_fired_at: None, notify: true, effect: String::new() };
+        assert!(s.upsert_alert(&a).is_err());
+        assert!(s.upsert_alert(&Alert { threshold: 5.0, window_s: 0, ..a.clone() }).is_err());
+        assert!(s.upsert_alert(&Alert { kind: AlertKind::RisePct, threshold: 5.0, ..a }).is_ok());
+    }
+
+    #[test]
+    fn window_labels() {
+        assert_eq!(fmt_window(900), "15 minutes");
+        assert_eq!(fmt_window(3600), "1 hour");
+        assert_eq!(fmt_window(21600), "6 hours");
+        assert_eq!(fmt_window(604800), "7 days");
     }
 
     #[test]

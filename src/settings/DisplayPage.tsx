@@ -13,7 +13,7 @@ import { formOpt, formOptsFor } from "../forms/options";
 import { BOARD_IDS, FORM_INFO } from "../forms/registry";
 import { SKINS, Skin, TINTS, type SkinGroup } from "../skins/Skin";
 import { SKIN_OPTS, skinOpt } from "../skins/options";
-import { Group as Section, Row, Segmented, Toggle } from "./ui";
+import { Group as Section, prettyKey, Row, Segmented, Toggle } from "./ui";
 
 const DOCKED = ["edge", "drawer"];
 const CYCLING = ["island", "orb", "notch", "tag", "pet", "pager"];
@@ -62,6 +62,13 @@ function setForm(cfg: DisplayConfig, id: string, f: FormCfg): DisplayConfig {
   if (id === "island" || id === "edge" || id === "pop")
     return { ...cfg, [id]: f };
   return { ...cfg, forms: { ...cfg.forms, [id]: f } };
+}
+
+function describe(cfg: DisplayConfig, info: { id: string; text: string }): string {
+  if (info.id === "peek") {
+    return cfg.hotkeyPeek ? `Press ${prettyKey(cfg.hotkeyPeek)} to see every number in the middle of the screen for a few seconds.` : "Set a quick peek shortcut under General, then press it to see every number for a few seconds.";
+  }
+  return info.text;
 }
 
 function isOn(cfg: DisplayConfig, id: string) {
@@ -130,6 +137,8 @@ const LOOK_DEFAULTS: Partial<FormCfg> = {
   bg: "#000000",
   bgAlpha: 1,
   roundness: 1,
+  spacing: 1,
+  gap: 26,
   shadow: true,
 };
 
@@ -140,6 +149,7 @@ function Slider({
   step = 1,
   onChange,
   unit = "",
+  fine = false,
 }: {
   value: number;
   min: number;
@@ -147,7 +157,46 @@ function Slider({
   step?: number;
   onChange: (v: number) => void;
   unit?: string;
+  fine?: boolean;
 }) {
+  const clamp = (v: number) => Math.min(max, Math.max(min, Math.round(v)));
+  if (fine) {
+    const nudge = (d: number) => (e: React.MouseEvent) => onChange(clamp(value + d * (e.shiftKey ? 10 : 1)));
+    return (
+      <div className="slider fine">
+        <button type="button" className="nudge" aria-label="Less" title="1 px (Shift: 10 px)" onClick={nudge(-1)}>
+          −
+        </button>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+        />
+        <button type="button" className="nudge" aria-label="More" title="1 px (Shift: 10 px)" onClick={nudge(1)}>
+          +
+        </button>
+        <input
+          className="slider-num"
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          aria-label="Exact value"
+          onChange={(e) => e.target.value !== "" && Number.isFinite(Number(e.target.value)) && onChange(clamp(Number(e.target.value)))}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              e.preventDefault();
+              onChange(clamp(value + (e.key === "ArrowUp" ? 1 : -1) * (e.shiftKey ? 10 : 1)));
+            }
+          }}
+        />
+        <span className="slider-unit">{unit.trim()}</span>
+      </div>
+    );
+  }
   return (
     <div className="slider">
       <input
@@ -284,6 +333,21 @@ function FormSettings({
               />
             </Row>
           )}
+          {!NO_ICONS.includes(k) && f.showIcons && (
+            <Row label="Icon style" hint="Tile, a colour fade from the left, a glowing badge, a bare glyph, or a colour bar on the left.">
+              <Segmented
+                value={f.iconStyle ?? "tile"}
+                onChange={(iconStyle) => onChange({ ...f, iconStyle })}
+                options={[
+                  { id: "tile", label: "Tile" },
+                  { id: "fade", label: "Fade" },
+                  { id: "glow", label: "Glow" },
+                  { id: "glyph", label: "Glyph" },
+                  { id: "bar", label: "Bar" },
+                ]}
+              />
+            </Row>
+          )}
           {!NO_DELTA.includes(k) && (
             <Row
               label="Today's change"
@@ -370,7 +434,7 @@ function FormSettings({
               />
             </Row>
           )}
-          <div className="skin-head">Show on the widget</div>
+          <div className="row-head">Show on the widget</div>
           {formOptsFor(k).map((o) => (
             <Row key={o.id} label={o.label}>
               <Toggle
@@ -458,18 +522,20 @@ function FormSettings({
           >
             <Slider
               value={f.offsetX}
-              min={DOCKED.includes(k) ? 0 : -600}
-              max={600}
+              min={DOCKED.includes(k) ? -40 : -1600}
+              max={1600}
               unit=" px"
+              fine
               onChange={(offsetX) => onChange({ ...f, offsetX })}
             />
           </Row>
           <Row label="Move up or down" hint="Positive moves down.">
             <Slider
               value={f.offsetY}
-              min={-400}
-              max={400}
+              min={-1000}
+              max={1000}
               unit=" px"
+              fine
               onChange={(offsetY) => onChange({ ...f, offsetY })}
             />
           </Row>
@@ -545,6 +611,31 @@ function FormSettings({
               onChange={(v) => onChange({ ...f, roundness: v / 100 })}
             />
           </Row>
+          {!["island", "edge", "pop", "orb", "pet", "peek"].includes(k) && (
+            <Row label="Spacing" hint="Space between the tiles and items.">
+              <Slider
+                value={Math.round((f.spacing ?? 1) * 100)}
+                min={0}
+                max={300}
+                step={10}
+                unit="%"
+                onChange={(v) => onChange({ ...f, spacing: v / 100 })}
+              />
+            </Row>
+          )}
+          {k === "wings" && (
+            <Row label="Middle gap" hint="Room between the two wings, for a camera notch or a clock.">
+              <Slider
+                value={f.gap ?? 26}
+                min={0}
+                max={600}
+                step={2}
+                unit=" px"
+                fine
+                onChange={(gap) => onChange({ ...f, gap })}
+              />
+            </Row>
+          )}
           <Row label="Widget opacity">
             <Slider
               value={Math.round(f.opacity * 100)}
@@ -798,7 +889,7 @@ export function DisplayPage({
         </header>
         <section className="group">
           <div className="group-body">
-            <Row label={info.text} />
+            <Row label={describe(cfg, info)} />
             {form && (
               <FormSettings
                 key={editing}
@@ -970,7 +1061,7 @@ export function DisplayPage({
                 </span>
               )}
             </span>
-            <span className="row-hint">{viewing.text}</span>
+            <span className="row-hint">{describe(cfg, viewing)}</span>
           </div>
           <button
             type="button"
@@ -1013,7 +1104,7 @@ export function DisplayPage({
           const info = FORM_INFO.find((t) => t.id === id)!;
           const on = isOn(cfg, id);
           return (
-            <Row key={id} label={info.title} hint={info.text}>
+            <Row key={id} label={info.title} hint={describe(cfg, info)}>
               {on && id !== "confetti" && (
                 <button
                   type="button"
@@ -1035,10 +1126,9 @@ export function DisplayPage({
 const LOOK_GROUPS: ("All" | SkinGroup)[] = [
   "All",
   "Sans",
-  "Display",
-  "Serif",
+  "Condensed",
+  "Wide",
   "Mono",
-  "Effects",
   "Retro",
 ];
 

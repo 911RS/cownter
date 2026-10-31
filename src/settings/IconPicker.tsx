@@ -44,7 +44,7 @@ export function IconPicker({ icon, onChange, siteUrl }: { icon: Icon; onChange: 
           {ICON_COLORS.map((c) => (
             <button type="button" key={c} aria-label={`Background ${c}`} className={"color" + (icon.bg === c ? " on" : "")} style={{ background: c }} onClick={() => onChange({ ...icon, bg: c })} />
           ))}
-          <input type="color" aria-label="Custom colour" value={icon.bg.startsWith("#") && icon.bg.length === 7 ? icon.bg : "#2b2f3a"} onChange={(e) => onChange({ ...icon, bg: e.target.value })} />
+          <input type="color" className="color-custom" aria-label="Custom colour" value={icon.bg.startsWith("#") && icon.bg.length === 7 ? icon.bg : "#2b2f3a"} onChange={(e) => onChange({ ...icon, bg: e.target.value })} />
         </div>
       </div>
       <Segmented
@@ -65,17 +65,24 @@ export function IconPicker({ icon, onChange, siteUrl }: { icon: Icon; onChange: 
           ))}
           <input
             className="emoji-input"
-            placeholder="Any emoji"
+            placeholder="Paste any emoji"
             maxLength={8}
-            onChange={(e) => e.target.value.trim() && onChange({ ...icon, kind: "emoji", value: e.target.value.trim() })}
+            onKeyDown={(e) => {
+              const v = e.currentTarget.value.trim();
+              if (e.key === "Enter" && v) onChange({ ...icon, kind: "emoji", value: v });
+            }}
+            onBlur={(e) => {
+              const v = e.currentTarget.value.trim();
+              if (v) onChange({ ...icon, kind: "emoji", value: v });
+            }}
           />
         </div>
       )}
       {tab === "builtin" && (
-        <div className="icon-grid">
+        <div className="icon-grid icons">
           {Object.keys(BUILTIN_ICONS).map((k) => (
             <button type="button" key={k} title={k} className={"icon-cell" + (icon.kind === "builtin" && icon.value === k ? " on" : "")} onClick={() => onChange({ ...icon, kind: "builtin", value: k })}>
-              <EntryIcon icon={{ kind: "builtin", value: k, bg: "#22262d" }} size={26} />
+              <EntryIcon icon={{ kind: "builtin", value: k, bg: icon.bg }} size={26} />
             </button>
           ))}
         </div>

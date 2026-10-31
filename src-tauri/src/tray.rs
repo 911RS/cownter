@@ -88,3 +88,12 @@ pub fn update(app: &AppHandle, view: Option<&EntryView>, show_number: bool) {
         let _ = tray.set_title(text.as_deref());
     }
 }
+
+/// Clears the tray label so the next update is sent again, for panels that missed the first one.
+pub fn clear_title(app: &AppHandle) {
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        if !cfg!(target_os = "windows") {
+            let _ = tray.set_title(None::<&str>);
+        }
+    }
+}

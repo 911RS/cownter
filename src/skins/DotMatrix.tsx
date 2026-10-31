@@ -37,19 +37,19 @@ export function DotMatrix({ text, height, opts }: Props) {
   }
   const w = Math.max(1, x - 1) * PITCH;
   const h = 7 * PITCH;
-  const lit: string[] = [];
+  const lit: string[][] = cols.map(() => []);
   const off: string[] = [];
-  const hot: string[] = [];
+  const hot: string[][] = cols.map(() => []);
   const dot = (cx: number, cy: number, r: number) =>
     square ? `M${cx - r} ${cy - r}h${r * 2}v${r * 2}h${-r * 2}z` : `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0`;
-  cols.forEach(({ x: gx, rows }) =>
+  cols.forEach(({ x: gx, rows }, ci) =>
     rows.forEach((row, ry) =>
       [...row].forEach((c, rx) => {
         const cx = (gx + rx) * PITCH + PITCH / 2;
         const cy = ry * PITCH + PITCH / 2;
         if (c === "#") {
-          lit.push(dot(cx, cy, R));
-          hot.push(dot(cx - R * 0.3, cy - R * 0.3, R * 0.38));
+          lit[ci].push(dot(cx, cy, R));
+          hot[ci].push(dot(cx - R * 0.3, cy - R * 0.3, R * 0.38));
         } else off.push(dot(cx, cy, R));
       }),
     ),
@@ -64,9 +64,15 @@ export function DotMatrix({ text, height, opts }: Props) {
           </filter>
         </defs>
         <path className="dm-off" d={off.join("")} />
-        <path className="dm-glow" d={lit.join("")} filter={`url(#${fid})`} />
-        <path className="dm-on" d={lit.join("")} />
-        <path className="dm-hot" d={hot.join("")} />
+        {lit.map((l, i) =>
+          l.length ? (
+            <g key={i} className="dm-ch" style={{ animationDelay: `${i * -0.2}s` }}>
+              <path className="dm-glow" d={l.join("")} filter={`url(#${fid})`} />
+              <path className="dm-on" d={l.join("")} />
+              <path className="dm-hot" d={hot[i].join("")} />
+            </g>
+          ) : null,
+        )}
       </svg>
     </span>
   );

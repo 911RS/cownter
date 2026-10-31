@@ -75,7 +75,7 @@ export interface EntryView {
 }
 
 export type AlertKind = "above" | "below" | "changePct" | "riseBy" | "dropBy";
-export type AlertEffect = "" | "float" | "pop" | "burst";
+export type AlertEffect = "" | "float" | "pop" | "burst" | "confetti" | "shake" | "glow" | "flash" | "zoom" | "rain";
 
 export interface Alert {
   id: number;
@@ -107,22 +107,24 @@ export type CoreEvent =
 
 export type SkinName =
   | "clean"
-  | "heavy"
-  | "light"
+  | "dmsans"
+  | "manrope"
+  | "poppins"
+  | "montserrat"
+  | "rubik"
+  | "lexend"
   | "geometric"
   | "modern"
   | "rounded"
+  | "grotesk"
   | "tall"
+  | "barlow"
   | "poster"
   | "wide"
-  | "grotesk"
   | "future"
-  | "serif"
-  | "elegant"
-  | "editorial"
   | "mono"
-  | "gradient"
-  | "outline"
+  | "plexmono"
+  | "spacemono"
   | "dotMatrix"
   | "calculator"
   | "neon";
@@ -150,6 +152,9 @@ export interface FormCfg {
   roundness: number;
   shadow: boolean;
   showIcons: boolean;
+  iconStyle?: IconStyle;
+  spacing?: number;
+  gap?: number;
   showDelta: boolean;
   showDots: boolean;
   showNames: boolean;
@@ -189,3 +194,5 @@ export interface TestResult {
   error: string | null;
   text?: string | null;
 }
+
+export type IconStyle = "tile" | "fade" | "glow" | "glyph" | "bar";

@@ -60,9 +60,13 @@ export function Banner({ kind, children }: { kind: "error" | "info" | "ok"; chil
 
 const KEY_NAMES: Record<string, string> = { " ": "Space", ArrowUp: "Up", ArrowDown: "Down", ArrowLeft: "Left", ArrowRight: "Right", Escape: "Escape" };
 
+export function prettyKey(value: string): string {
+  return value.replace("CommandOrControl", navigator.platform.includes("Mac") ? "⌘" : "Ctrl").replace(/\+/g, " + ");
+}
+
 export function HotkeyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [rec, setRec] = useState(false);
-  const pretty = value.replace("CommandOrControl", navigator.platform.includes("Mac") ? "⌘" : "Ctrl").replace(/\+/g, " + ");
+  const pretty = prettyKey(value);
   return (
     <div className="hotkey">
       <button

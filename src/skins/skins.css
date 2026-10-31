@@ -10,6 +10,136 @@
 .tint-white { --h: 220; --sat: 12%; }
 .tint-chroma { --h: 0; --sat: 100%; animation: chroma-cycle 6s linear infinite; }
 @keyframes chroma-cycle { from { --h: 0; } to { --h: 360; } }
+.tint-chroma :is(.neon, .ss) > *, .tint-chroma .dm-ch { animation: chroma-cycle 2.4s linear infinite; }
+.tint-chroma :is(.neon, .ss) > :nth-child(2) { animation-delay: -0.2s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(3) { animation-delay: -0.4s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(4) { animation-delay: -0.6s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(5) { animation-delay: -0.8s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(6) { animation-delay: -1.0s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(7) { animation-delay: -1.2s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(8) { animation-delay: -1.4s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(9) { animation-delay: -1.6s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(10) { animation-delay: -1.8s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(11) { animation-delay: -2.0s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(12) { animation-delay: -2.2s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(13) { animation-delay: -2.4s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(14) { animation-delay: -2.6s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(15) { animation-delay: -2.8s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(16) { animation-delay: -3.0s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(17) { animation-delay: -3.2s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(18) { animation-delay: -3.4s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(19) { animation-delay: -3.6s; }
+.tint-chroma :is(.neon, .ss) > :nth-child(20) { animation-delay: -3.8s; }
+.tint-chroma .ft {
+  background: linear-gradient(90deg, #ff3b3b, #ffb13b, #f4ff3b, #3bff6e, #3be2ff, #3b6bff, #b13bff, #ff3bd0, #ff3b3b) 0 50% / 200% 100% repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  -webkit-text-stroke-color: transparent;
+  animation: chroma-wave 2.4s linear infinite;
+}
+.tint-chroma .ft .ft-sym { color: transparent; }
+@keyframes chroma-wave { from { background-position: 0 50%; } to { background-position: -200% 50%; } }
+.tint-amber { --h: 36; --sat: 100%; }
+.tint-phosphor { --h: 135; --sat: 90%; }
+.tint-ice { --h: 195; --sat: 100%; }
+.tint-ruby { --h: 355; --sat: 100%; }
+.tint-violet { --h: 270; --sat: 95%; }
+.tint-classic { --h: 75; --sat: 15%; }
+
+/* Dot-matrix LED panel */
+.dm-panel {
+  display: inline-flex;
+  background: radial-gradient(ellipse at 50% 0%, hsl(var(--h) 30% 9%), #050505 75%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.dm { display: block; overflow: visible; }
+.dm-off { fill: hsl(var(--h) 20% 11%); }
+.dm-glow { fill: hsl(var(--h) var(--sat) 58% / 0.75); }
+.dm-on { fill: hsl(var(--h) var(--sat) 66%); transition: fill 0.4s; }
+.dm-hot { fill: hsl(var(--h) 100% 90% / 0.85); }
+.dm-flash .dm-on { fill: hsl(var(--h) var(--sat) 80%); }
+.tint-classic .dm-panel { background: linear-gradient(#c3cba9, #aab38f); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35); }
+.tint-classic .dm-off { fill: rgba(30, 38, 15, 0.08); }
+.tint-classic .dm-on { fill: #1d2412; }
+.tint-classic .dm-glow { fill: rgba(0, 0, 0, 0.15); transform: translate(1px, 1px); }
+.tint-classic .dm-hot { fill: none; }
+
+/* Calculator LCD */
+.ss {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.09em;
+  border-radius: 0.14em;
+  background: linear-gradient(hsl(var(--h) 20% 7%), hsl(var(--h) 25% 4%));
+  box-shadow: inset 0 0.05em 0.12em rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+.ss-digit { display: block; overflow: visible; }
+.ss-on { fill: hsl(var(--h) var(--sat) 60%); filter: drop-shadow(0 0 1.5px hsl(var(--h) var(--sat) 55% / 0.8)); transition: fill 0.25s; }
+.ss-off { fill: hsl(var(--h) 40% 50% / 0.07); }
+.ss-dot { position: relative; width: 0.14em; height: 0.14em; border-radius: 50%; background: hsl(var(--h) var(--sat) 60%); margin: 0 0.01em 0.01em; flex: none; }
+.ss-comma::after { content: ""; position: absolute; left: 0.05em; top: 0.1em; width: 0.05em; height: 0.12em; background: inherit; transform: skewX(-20deg); border-radius: 0 0 0.03em 0.03em; }
+.ss-space { width: 0.3em; }
+.ss-sym { color: hsl(var(--h) var(--sat) 60%); font: 600 0.7em "JetBrains Mono", monospace; line-height: 1; padding-bottom: 0.06em; }
+.tint-classic .ss { background: linear-gradient(#c5cdab, #a9b28e); box-shadow: inset 0 0.05em 0.12em rgba(0, 0, 0, 0.4); }
+.tint-classic .ss-on { fill: #1d2412; filter: drop-shadow(0.06em 0.06em 0 rgba(0, 0, 0, 0.18)); }
+.tint-classic .ss-off { fill: rgba(30, 38, 15, 0.07); }
+.tint-classic .ss-dot { background: #1d2412; }
+.tint-classic .ss-sym { color: #1d2412; }
+
+/* Neon tubes */
+.neon { display: inline-flex; align-items: flex-end; gap: 0.06em; line-height: 1; animation: neon-on 0.8s steps(1) both; }
+.neon-ch { display: block; overflow: visible; }
+.neon-ch path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.neon-glow { stroke: hsl(var(--h) var(--sat) 55% / 0.75); stroke-width: 4.2; filter: blur(2px); }
+.neon-tube { stroke: hsl(var(--h) var(--sat) 64%); stroke-width: 1.9; }
+.neon-core { stroke: hsl(var(--h) 100% 94%); stroke-width: 0.7; }
+.neon-sym {
+  font: 300 0.9em "Oswald", sans-serif;
+  color: hsl(var(--h) 100% 90%);
+  text-shadow: 0 0 0.05em #fff, 0 0 0.15em hsl(var(--h) var(--sat) 60%), 0 0 0.4em hsl(var(--h) var(--sat) 50%);
+  padding: 0 0.05em;
+}
+@keyframes neon-on {
+  0% { opacity: 0.15; }
+  12% { opacity: 1; }
+  20% { opacity: 0.3; }
+  30%, 100% { opacity: 1; }
+}
+
+/* Text fonts */
+.ft { display: inline-flex; align-items: center; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums lining-nums; color: hsl(var(--h) var(--sat) 68%); transition: color 0.4s; }
+.tint-white .ft { color: #f4f6fa; }
+.tint-classic .ft { color: #c9d0b2; }
+.ft-clean { font-family: "Inter Tight", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-dmsans { font-family: "DM Sans", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-manrope { font-family: "Manrope", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-poppins { font-family: "Poppins", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-montserrat { font-family: "Montserrat", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-rubik { font-family: "Rubik", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-lexend { font-family: "Lexend", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-geometric { font-family: "Outfit", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-modern { font-family: "Sora", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-rounded { font-family: "Nunito", system-ui, sans-serif; --w0: 300; --w1: 700; --w2: 900; }
+.ft-grotesk { font-family: "Space Grotesk", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 700; }
+.ft-tall { font-family: "Oswald", system-ui, sans-serif; --w0: 300; --w1: 500; --w2: 700; }
+.ft-barlow { font-family: "Barlow Condensed", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-poster { font-family: "Bebas Neue", system-ui, sans-serif; --w0: 400; --w1: 400; --w2: 400; }
+.ft-wide { font-family: "Unbounded", system-ui, sans-serif; --w0: 300; --w1: 600; --w2: 800; }
+.ft-future { font-family: "Orbitron", system-ui, sans-serif; --w0: 400; --w1: 600; --w2: 800; }
+.ft-mono { font-family: "JetBrains Mono", ui-monospace, monospace; --w0: 300; --w1: 600; --w2: 800; }
+.ft-plexmono { font-family: "IBM Plex Mono", ui-monospace, monospace; --w0: 300; --w1: 600; --w2: 700; }
+.ft-spacemono { font-family: "Space Mono", ui-monospace, monospace; --w0: 400; --w1: 400; --w2: 700; }
+.ft { font-weight: var(--w1, 600); letter-spacing: -0.01em; }
+.o-bold .ft { font-weight: var(--w2, 800); }
+.o-thin .ft { font-weight: var(--w0, 300); }
+.o-gradient .ft { background: linear-gradient(100deg, hsl(var(--h) var(--sat) 74%), hsl(calc(var(--h) + 55) var(--sat) 62%)); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+.tint-white.o-gradient .ft { background-image: linear-gradient(100deg, #ffffff, #9fb4ff); }
+.o-outline .ft { color: transparent !important; -webkit-text-stroke: max(1px, 0.035em) hsl(var(--h) var(--sat) 70%); }
+.tint-white.o-outline .ft { -webkit-text-stroke-color: #f4f6fa; }
+.tint-chroma.o-outline .ft { -webkit-text-stroke-color: rgba(255, 255, 255, 0.85); }
+.ft-sym { color: transparent; }
+@keyframes chroma-wave { from { background-position: 0 50%; } to { background-position: -200% 50%; } }
 .tint-amber { --h: 36; --sat: 100%; }
 .tint-phosphor { --h: 135; --sat: 90%; }
 .tint-ice { --h: 195; --sat: 100%; }
@@ -87,15 +217,12 @@
 .ft-tall { font-family: "Oswald", "Inter Tight", sans-serif; font-weight: 600; letter-spacing: 0.01em; }
 .ft-mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-weight: 600; letter-spacing: -0.02em; }
 .ft-rounded { font-family: "Nunito", "Inter Tight", sans-serif; font-weight: 800; }
-.ft-serif { font-family: "Fraunces", Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
 .ft-geometric { font-family: "Outfit", "Inter Tight", sans-serif; font-weight: 600; }
 .ft-modern { font-family: "Sora", "Inter Tight", sans-serif; font-weight: 600; letter-spacing: -0.02em; }
 .ft-poster { font-family: "Bebas Neue", "Oswald", sans-serif; font-weight: 400; letter-spacing: 0.02em; }
 .ft-wide { font-family: "Unbounded", "Inter Tight", sans-serif; font-weight: 600; letter-spacing: -0.01em; }
 .ft-grotesk { font-family: "Space Grotesk", "Inter Tight", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
 .ft-future { font-family: "Orbitron", "Inter Tight", sans-serif; font-weight: 700; letter-spacing: 0.02em; }
-.ft-elegant { font-family: "Playfair Display", Georgia, serif; font-weight: 700; font-style: italic; }
-.ft-editorial { font-family: "DM Serif Display", Georgia, serif; font-weight: 400; }
 .ft-gradient { font-family: "Inter Tight", system-ui, sans-serif; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(100deg, hsl(var(--h) var(--sat) 72%), hsl(calc(var(--h) + 55) var(--sat) 66%)); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
 .tint-white .ft-gradient { background-image: linear-gradient(100deg, #ffffff, #9fb4ff); }
 .ft-outline { font-family: "Inter Tight", system-ui, sans-serif; font-weight: 800; letter-spacing: -0.01em; color: transparent !important; -webkit-text-stroke: max(1px, 0.035em) hsl(var(--h) var(--sat) 70%); }

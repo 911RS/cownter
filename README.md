@@ -25,9 +25,9 @@ You keep a browser tab open just to watch one number. Cownter puts that number o
 - **Any source.** YouTube, GitHub, Shopify, Stripe, or any URL that returns JSON, HTML or plain text. Click the value you want in a live preview of the response.
 - **Numbers or text.** Track a count, or a text such as an order status or a version, with a goal like "becomes Delivered".
 - **26 on-screen styles.** Island, floating bar, notch, edge tab, ticker, sticky notes, folder tabs, a clothesline, a train that drives along your taskbar, a desktop cow and more. Pick one, then tune every detail.
-- **20 digit looks.** 17 modern typefaces (clean, heavy, light, tall, poster, wide, serif, mono, gradient, outline and more) plus dot-matrix, calculator and neon, in eight colours including RGB chroma. Each look has its own options.
+- **19 font families plus 3 retro looks.** Inter, DM Sans, Manrope, Poppins, Montserrat, Rubik, Oswald, Bebas Neue, JetBrains Mono and more, with bold, thin, italic, outline and gradient switches. Dot-matrix, calculator and neon for a retro feel. Eight colours, including an RGB chroma wave.
 - **History and trends.** Sparklines and today's change for each number. Data is kept for a year, then compacted.
-- **Alerts and effects.** "When it goes up by 1, float +1 over the widget", "when it goes above 10,000, notify me", or both. Goals celebrate with confetti.
+- **Alerts and effects.** "When it goes up by 1, float +1 over the widget", "when it goes above 10,000, notify me", or both. Ten effects (float, bubble, burst, confetti, rain, zoom, shake, glow, flash) with a live preview and one-click templates. Goals celebrate with confetti.
 - **Formulas.** Combine numbers, such as `orders / visitors * 100`.
 - **Soft sounds.** Seven built-in sounds you can play when a number changes or a goal is reached.
 - **Private by design.** No account, no server, no telemetry. Keys and tokens live in your system keyring.
@@ -63,10 +63,10 @@ You keep a browser tab open just to watch one number. Cownter puts that number o
 
 Every style can be customized:
 
-- **Font:** 20 looks in six groups, eight colours, and options per look (italic, glow, unlit dots, LCD panel, flicker and more).
-- **Content:** which numbers it shows, icons, names, today's change, page dots, click and hover behaviour, cycle speed, and switches for every indicator (status marks, separators, smoke, the pager's light and more).
-- **Position:** screen, anchor (9 spots), side and height for edge styles, pixel offsets.
-- **Look:** size, fine scale, background colour and opacity, corner roundness, widget opacity, shadow.
+- **Font:** 22 looks in five groups, eight colours, and options per look (bold, thin, italic, outline, gradient, glow, unlit dots, LCD panel, flicker and more).
+- **Content:** which numbers it shows, icons and icon style (tile, colour fade, glow, glyph, side bar), names, today's change, page dots, click and hover behaviour, cycle speed, and switches for every indicator (status marks, separators, the VS badge, smoke, the pager's light and more).
+- **Position:** screen, anchor (9 spots), side and height for edge styles, pixel offsets with fine nudge buttons. Widgets can move right up to the screen edge.
+- **Look:** size, fine scale, background colour and opacity, corner roundness, spacing between tiles, the middle gap of the notch wings, widget opacity, shadow.
 
 ## Sources
 

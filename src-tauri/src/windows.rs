@@ -1,6 +1,8 @@
 use crate::display::{DisplayConfig, EXTRA_FORMS};
 use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
+/// Part of a widget window that always stays on screen, in logical pixels.
+const KEEP_VISIBLE: f64 = 24.0;
 const MARGIN: f64 = 0.0;
 /// Forms that only appear for a moment (on a change or a shortcut).
 const TRANSIENT: [&str; 2] = ["pop", "peek"];
@@ -35,7 +37,13 @@ fn build_widget(app: &AppHandle, label: &str) -> tauri::Result<WebviewWindow> {
     if label == "overlay" {
         b = b.focusable(false);
     }
-    b.build()
+    let w = b.build()?;
+    #[cfg(target_os = "linux")]
+    if let Ok(gw) = w.gtk_window() {
+        use gtk::prelude::GtkWindowExt;
+        gw.set_type_hint(gtk::gdk::WindowTypeHint::Dock);
+    }
+    Ok(w)
 }
 
 /// Creates or closes form windows so they match the display config. The overlay window always exists.
@@ -145,8 +153,9 @@ pub fn place(app: &AppHandle, cfg: &DisplayConfig, label: &str, width: f64, heig
         }
         None => (a.x, a.y),
     };
-    let x = x.clamp(a.x, (a.x + a.w - width).max(a.x));
-    let y = y.clamp(a.y, (a.y + a.h - height).max(a.y));
+    let keep = KEEP_VISIBLE.min(width).min(height);
+    let x = x.clamp(a.x - width + keep, a.x + a.w - keep);
+    let y = y.clamp(a.y - height + keep, a.y + a.h - keep);
     let size = LogicalSize::new(width, height);
     if cfg!(target_os = "linux") {
         let _ = w.set_min_size(None::<LogicalSize<f64>>);

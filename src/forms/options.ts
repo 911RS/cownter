@@ -23,7 +23,10 @@ export const FORM_OPTS: Record<string, FormOpt[]> = {
   trend: [{ id: "spark", label: "Sparklines", def: true }],
   bar: [{ id: "div", label: "Dividers", def: true }],
   deck: [{ id: "div", label: "Dividers", def: true }],
-  versus: [{ id: "vsbar", label: "Comparison bar", def: true }],
+  versus: [
+    { id: "vsbadge", label: "VS badge", def: true },
+    { id: "vsbar", label: "Comparison bar", def: true },
+  ],
   tag: [{ id: "string", label: "String and hole", def: true }],
   clothesline: [{ id: "rope", label: "Rope and pegs", def: true }],
   train: [

@@ -86,6 +86,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     }
     windows::sync(&handle, &display);
     refresh_tray(&handle);
+    let later = handle.clone();
+    tauri::async_runtime::spawn(async move {
+        for secs in [2, 5, 15] {
+            tokio::time::sleep(std::time::Duration::from_secs(secs)).await;
+            tray::clear_title(&later);
+            refresh_tray(&later);
+        }
+    });
     if !display.onboarded || store.entries()?.is_empty() {
         windows::open_settings(&handle)?;
     }

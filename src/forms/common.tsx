@@ -38,11 +38,13 @@ function rgba(hex: string, a: number): string {
 /** CSS variables and classes for the look settings shared by every form. */
 export function formLook(f: FormCfg): { className: string; style: React.CSSProperties } {
   return {
-    className: (f.shadow === false ? " no-shadow" : "") + (f.showIcons === false ? " no-icons" : "") + (f.showDelta === false ? " no-delta" : "") + (f.clickOpens === false ? " no-click" : ""),
+    className: (f.shadow === false ? " no-shadow" : "") + (f.showIcons === false ? " no-icons" : " is-" + (f.iconStyle ?? "tile")) + (f.showDelta === false ? " no-delta" : "") + (f.clickOpens === false ? " no-click" : ""),
     style: {
       ["--s" as string]: formScale(f),
       ["--bg" as string]: rgba(f.bg ?? "#000000", f.bgAlpha ?? 1),
       ["--r" as string]: f.roundness ?? 1,
+      ["--sp" as string]: f.spacing ?? 1,
+      ["--mid" as string]: f.gap ?? 26,
       opacity: f.opacity ?? 1,
     },
   };

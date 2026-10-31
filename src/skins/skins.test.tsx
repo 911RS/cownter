@@ -42,8 +42,8 @@ describe("Skin", () => {
   });
   it("draws text fonts as plain text", async () => {
     const { Skin } = await import("./Skin");
-    const { container } = render(<Skin skin="serif" tint="white" text="1,234" height={20} />);
-    expect(container.querySelector(".ft-serif")?.textContent).toBe("1,234");
+    const { container } = render(<Skin skin="manrope" tint="white" text="1,234" height={20} />);
+    expect(container.querySelector(".ft-manrope")?.textContent).toBe("1,234");
   });
 });
 

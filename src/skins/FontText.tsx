@@ -1,6 +1,6 @@
-export type FontStyle = "clean" | "heavy" | "light" | "geometric" | "modern" | "rounded" | "tall" | "poster" | "wide" | "grotesk" | "future" | "serif" | "elegant" | "editorial" | "mono" | "gradient" | "outline";
+export type FontStyle = "clean" | "dmsans" | "manrope" | "poppins" | "montserrat" | "rubik" | "lexend" | "geometric" | "modern" | "rounded" | "grotesk" | "tall" | "barlow" | "poster" | "wide" | "future" | "mono" | "plexmono" | "spacemono";
 
-const SIZE: Partial<Record<FontStyle, number>> = { poster: 1.22, wide: 0.86, future: 0.9, elegant: 1.05, editorial: 1.05 };
+const SIZE: Partial<Record<FontStyle, number>> = { poppins: 0.96, montserrat: 0.94, lexend: 0.96, modern: 0.95, barlow: 1.1, poster: 1.22, wide: 0.86, future: 0.9 };
 
 /** Draws the text in a regular typeface, sized so its digits are `height` pixels tall. */
 export function FontText({ text, height, style }: { text: string; height: number; style: FontStyle }) {

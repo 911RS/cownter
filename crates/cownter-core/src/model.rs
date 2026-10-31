@@ -261,7 +261,7 @@ fn yes() -> bool {
     true
 }
 
-pub const ALERT_EFFECTS: [&str; 4] = ["", "float", "pop", "burst"];
+pub const ALERT_EFFECTS: [&str; 10] = ["", "float", "pop", "burst", "confetti", "shake", "glow", "flash", "zoom", "rain"];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

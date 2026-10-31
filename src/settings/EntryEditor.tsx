@@ -545,7 +545,7 @@ export function EntryEditor({ initial, views, groups, keyring, onClose, onSaved 
         <section>
           <h3>5 · Alerts</h3>
           <p className="sec-hint">Rules that react to the number: a desktop notification, an effect such as +1 on the widget, or both.</p>
-          {!isNew ? <AlertsEditor entryId={d.id} /> : <p className="muted">Save this number first, then add alerts here.</p>}
+          {!isNew ? <AlertsEditor entryId={d.id} view={live} /> : <p className="muted">Save this number first, then add alerts here.</p>}
         </section>
 
         {!isNew && (

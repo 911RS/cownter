@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 const KEY: &str = "display";
-const VERSION: u32 = 3;
+const VERSION: u32 = 4;
 
 /// Forms beyond island, edge and pop, with their default anchor.
 pub const EXTRA_FORMS: &[(&str, &str)] = &[
@@ -77,8 +77,14 @@ pub struct FormCfg {
     pub bg_alpha: f64,
     /// Corner roundness, 0 (square) to 1 (pill).
     pub roundness: f64,
+    /// Space between items, 0 to 3 times the normal spacing.
+    pub spacing: f64,
+    /// Notch wings: gap between the two wings, in logical pixels.
+    pub gap: f64,
     pub shadow: bool,
     pub show_icons: bool,
+    /// `tile`, `fade`, `glow`, `glyph` or `bar`.
+    pub icon_style: String,
     pub show_delta: bool,
     /// Island: the page dots next to the number.
     pub show_dots: bool,
@@ -115,8 +121,11 @@ impl Default for FormCfg {
             bg: "#000000".into(),
             bg_alpha: 1.0,
             roundness: 1.0,
+            spacing: 1.0,
+            gap: 26.0,
             shadow: true,
             show_icons: true,
+            icon_style: "tile".into(),
             show_delta: true,
             show_dots: true,
             show_names: true,
@@ -225,17 +234,42 @@ impl DisplayConfig {
                 }
             }
         }
+        if self.version < 4 {
+            for f in [&mut self.island, &mut self.edge, &mut self.pop].into_iter().chain(self.forms.values_mut()) {
+                let opt = match f.skin.as_str() {
+                    "heavy" => Some("bold"),
+                    "light" => Some("thin"),
+                    "gradient" => Some("gradient"),
+                    "outline" => Some("outline"),
+                    _ => None,
+                };
+                if let Some(o) = opt {
+                    let old = f.skin.clone();
+                    f.skin = "clean".into();
+                    let carried: Vec<(String, bool)> = f
+                        .skin_opts
+                        .iter()
+                        .filter_map(|(k, v)| k.strip_prefix(&format!("{old}.")).map(|r| (format!("clean.{r}"), *v)))
+                        .collect();
+                    f.skin_opts.extend(carried);
+                    f.skin_opts.insert(format!("clean.{o}"), true);
+                }
+            }
+        }
         self.version = VERSION;
         self.forms.retain(|k, _| EXTRA_FORMS.iter().any(|(id, _)| id == k));
         for (id, pos) in EXTRA_FORMS {
             self.forms.entry(id.to_string()).or_insert_with(|| extra_default(id, pos));
         }
         for f in [&mut self.island, &mut self.edge, &mut self.pop].into_iter().chain(self.forms.values_mut()) {
-            if !matches!(f.skin.as_str(), "clean" | "heavy" | "light" | "geometric" | "modern" | "rounded" | "tall" | "poster" | "wide" | "grotesk" | "future" | "serif" | "elegant" | "editorial" | "mono" | "gradient" | "outline" | "dotMatrix" | "calculator" | "neon") {
+            if !matches!(f.skin.as_str(), "clean" | "dmsans" | "manrope" | "poppins" | "montserrat" | "rubik" | "lexend" | "geometric" | "modern" | "rounded" | "grotesk" | "tall" | "barlow" | "poster" | "wide" | "future" | "mono" | "plexmono" | "spacemono" | "dotMatrix" | "calculator" | "neon") {
                 f.skin = "clean".into();
             }
             if !matches!(f.tint.as_str(), "white" | "chroma" | "amber" | "phosphor" | "ice" | "ruby" | "violet" | "classic") {
                 f.tint = "white".into();
+            }
+            if !matches!(f.icon_style.as_str(), "tile" | "fade" | "glow" | "glyph" | "bar") {
+                f.icon_style = "tile".into();
             }
             if !matches!(f.size.as_str(), "xs" | "s" | "m" | "l" | "xl") {
                 f.size = "m".into();
@@ -253,6 +287,8 @@ impl DisplayConfig {
             f.opacity = fin(f.opacity, 0.2, 1.0, 1.0);
             f.bg_alpha = fin(f.bg_alpha, 0.0, 1.0, 1.0);
             f.roundness = fin(f.roundness, 0.0, 1.0, 1.0);
+            f.spacing = fin(f.spacing, 0.0, 3.0, 1.0);
+            f.gap = fin(f.gap, 0.0, 800.0, 26.0);
             let hex = f.bg.len() == 7 && f.bg.starts_with('#') && f.bg[1..].chars().all(|c| c.is_ascii_hexdigit());
             if !hex {
                 f.bg = "#000000".into();
@@ -313,7 +349,7 @@ mod tests {
         let c: DisplayConfig = serde_json::from_str(r#"{"island":{"enabled":true,"position":"topRight"}}"#).unwrap();
         let c = c.sanitized();
         assert_eq!(c.island.position, "topCenter");
-        assert_eq!(c.version, 3);
+        assert_eq!(c.version, VERSION);
         let again: DisplayConfig = serde_json::from_str(&serde_json::to_string(&DisplayConfig { island: FormCfg { position: "bottomLeft".into(), ..c.island.clone() }, ..c }).unwrap()).unwrap();
         assert_eq!(again.sanitized().island.position, "bottomLeft");
     }
@@ -369,6 +405,22 @@ mod tests {
         assert_eq!((c.island.skin.as_str(), c.island.tint.as_str()), ("clean", "white"));
         assert_eq!((c.pop.skin.as_str(), c.pop.tint.as_str()), ("neon", "ice"));
         assert_eq!(c.edge.skin, "clean");
-        assert_eq!(c.version, 3);
+        assert_eq!(c.version, VERSION);
+    }
+
+    #[test]
+    fn removed_font_looks_become_options() {
+        let c: DisplayConfig = serde_json::from_str(
+            r#"{"version":3,"island":{"skin":"heavy","skinOpts":{"heavy.glow":true}},"pop":{"skin":"outline"},"edge":{"skin":"elegant","iconStyle":"nope","spacing":9}}"#,
+        )
+        .unwrap();
+        let c = c.sanitized();
+        assert_eq!(c.island.skin, "clean");
+        assert_eq!(c.island.skin_opts.get("clean.bold"), Some(&true));
+        assert_eq!(c.island.skin_opts.get("clean.glow"), Some(&true));
+        assert_eq!(c.pop.skin_opts.get("clean.outline"), Some(&true));
+        assert_eq!(c.edge.skin, "clean");
+        assert_eq!(c.edge.icon_style, "tile");
+        assert_eq!(c.edge.spacing, 3.0);
     }
 }

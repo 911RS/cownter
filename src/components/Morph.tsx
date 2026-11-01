@@ -59,6 +59,8 @@ export function Morph({ live, open, position, className, openClass = "open", clo
   const isOpen = open && !!os;
   const leave = useRef(onLeave);
   leave.current = onLeave;
+  const enter = useRef(onEnter);
+  enter.current = onEnter;
 
   const hs = position.endsWith("Left") ? "start" : position.endsWith("Right") ? "end" : "mid";
   const vs = position.startsWith("bottom") ? "end" : position.startsWith("middle") ? "mid" : "start";
@@ -83,9 +85,14 @@ export function Morph({ live, open, position, className, openClass = "open", clo
 
   useEffect(() => {
     if (!live) return;
-    const un = getCurrentWebviewWindow().listen("pointer-out", () => leave.current?.());
+    const out = () => leave.current?.();
+    const un = getCurrentWebviewWindow().listen("pointer-out", out);
+    const unIn = getCurrentWebviewWindow().listen("pointer-in", () => enter.current?.());
+    window.addEventListener("blur", out);
     return () => {
+      window.removeEventListener("blur", out);
       un.then((u) => u());
+      unIn.then((u) => u());
     };
   }, [live]);
 

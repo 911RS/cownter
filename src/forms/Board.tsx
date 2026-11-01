@@ -51,6 +51,7 @@ interface Ctx {
   open: boolean;
   /** True in a real widget window, false in settings previews. */
   live: boolean;
+  enter?: () => void;
   leave?: () => void;
   pulse: number | null;
   feed: Change[];
@@ -274,6 +275,7 @@ const LAYOUTS: Record<string, (c: Ctx) => React.ReactNode> = {
       open={c.open}
       position={c.f.position}
       className="b-panel b-notch"
+      onEnter={c.enter}
       onLeave={c.leave}
       closed={
         c.cur ? (
@@ -609,6 +611,11 @@ export function Board({ id }: { id: string }) {
     idx: n ? idx % n : 0,
     open,
     live: true,
+    enter: () => {
+      if (f.hoverExpands === false) return;
+      clearTimeout(leave.current);
+      setOpen(true);
+    },
     leave: () => setOpen(false),
     pulse,
     feed,
@@ -626,11 +633,7 @@ export function Board({ id }: { id: string }) {
       <ChangeFx f={f} views={list} />
       <div
         className="b-host"
-        onMouseEnter={() => {
-          if (f.hoverExpands === false) return;
-          clearTimeout(leave.current);
-          setOpen(true);
-        }}
+        onMouseEnter={c.enter}
         onMouseLeave={() => {
           leave.current = setTimeout(() => setOpen(false), 350);
         }}

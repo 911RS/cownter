@@ -40,8 +40,24 @@ fn build_widget(app: &AppHandle, label: &str) -> tauri::Result<WebviewWindow> {
     let w = b.build()?;
     #[cfg(target_os = "linux")]
     if let Ok(gw) = w.gtk_window() {
-        use gtk::prelude::GtkWindowExt;
+        use gtk::prelude::{GtkWindowExt, WidgetExt, WidgetExtManual};
         gw.set_type_hint(gtk::gdk::WindowTypeHint::Dock);
+        // The input shape is smaller than the window, so the webview misses the pointer crossing it.
+        gw.add_events(gtk::gdk::EventMask::ENTER_NOTIFY_MASK | gtk::gdk::EventMask::LEAVE_NOTIFY_MASK);
+        let win = w.clone();
+        gw.connect_enter_notify_event(move |_, e| {
+            if e.detail() != gtk::gdk::NotifyType::Inferior {
+                let _ = win.emit_to(win.label(), "pointer-in", ());
+            }
+            gtk::glib::Propagation::Proceed
+        });
+        let win = w.clone();
+        gw.connect_leave_notify_event(move |_, e| {
+            if e.detail() != gtk::gdk::NotifyType::Inferior {
+                let _ = win.emit_to(win.label(), "pointer-out", ());
+            }
+            gtk::glib::Propagation::Proceed
+        });
     }
     Ok(w)
 }

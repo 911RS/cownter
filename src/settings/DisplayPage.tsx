@@ -361,6 +361,23 @@ function FormSettings({
               />
             </Row>
           )}
+          {!NO_DELTA.includes(k) && f.showDelta && (
+            <Row
+              label="Keep it"
+              hint="All day resets at midnight. The others show it for a moment after the number moves, then hide it."
+            >
+              <Segmented
+                value={String(f.deltaHoldS ?? 0)}
+                onChange={(v) => onChange({ ...f, deltaHoldS: Number(v) })}
+                options={[
+                  { id: "0", label: "All day" },
+                  { id: "10", label: "10 s" },
+                  { id: "60", label: "1 min" },
+                  { id: "300", label: "5 min" },
+                ]}
+              />
+            </Row>
+          )}
           {NAMED.includes(k) && (
             <Row label="Names">
               <Toggle

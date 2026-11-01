@@ -183,6 +183,7 @@ export interface FormCfg {
   spacing?: number;
   gap?: number;
   showDelta: boolean;
+  deltaHoldS?: number;
   showDots: boolean;
   showNames: boolean;
   clickOpens: boolean;

@@ -89,6 +89,8 @@ pub struct FormCfg {
     /// `tile`, `big`, `fade`, `glow`, `glyph` or `bar`.
     pub icon_style: String,
     pub show_delta: bool,
+    /// Seconds today's change stays after the number moves; 0 keeps it all day.
+    pub delta_hold_s: u32,
     /// Island: the page dots next to the number.
     pub show_dots: bool,
     /// Show entry names where the form has room for them.
@@ -130,6 +132,7 @@ impl Default for FormCfg {
             show_icons: true,
             icon_style: "tile".into(),
             show_delta: true,
+            delta_hold_s: 0,
             show_dots: true,
             show_names: true,
             click_opens: true,

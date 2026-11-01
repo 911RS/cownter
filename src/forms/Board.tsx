@@ -10,6 +10,7 @@ import { EntryIcon } from "../components/EntryIcon";
 import { Morph } from "../components/Morph";
 import { Spark } from "../components/Spark";
 import { Skin } from "../skins/Skin";
+import { DeltaHold, noteDeltas } from "./deltaHold";
 import { ChangeFx, FxItem } from "./ChangeFx";
 import { PET_STAGES, petStage, petTitle } from "./pet";
 import { formOpt, formOptClasses } from "./options";
@@ -628,7 +629,9 @@ export function Board({ id }: { id: string }) {
   const layout = LAYOUTS[id];
   const empty = n === 0 && id !== "feed";
 
+  noteDeltas(list);
   return (
+    <DeltaHold.Provider value={f.deltaHoldS ?? 0}>
     <div className={`widget-root board-root form-${id}` + edgeOf(id, f) + look.className + seasonClass(season) + formOptClasses(id, f) + (id === "train" && formOpt(id, f, "travel") ? " travel" : "") + (id === "drawer" ? " dock-" + f.side : "")} ref={setRoot} style={look.style}>
       <ChangeFx f={f} views={list} />
       <div
@@ -646,6 +649,7 @@ export function Board({ id }: { id: string }) {
         {empty ? <div className="b-panel b-empty">Cownter · add a number</div> : layout ? layout(c) : null}
       </div>
     </div>
+    </DeltaHold.Provider>
   );
 }
 

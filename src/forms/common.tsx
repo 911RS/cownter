@@ -1,4 +1,6 @@
+import { useContext, useEffect, useState } from "react";
 import { formatDelta, formatValue, goalLeft } from "../core/format";
+import { DeltaHold, noteDelta } from "./deltaHold";
 import { SIZE_SCALE } from "../core/select";
 import type { EntryView, FormCfg, Status } from "../core/types";
 
@@ -14,8 +16,17 @@ export function valueText(v: EntryView, compactStyle = false): string {
 }
 
 export function Delta({ v }: { v: EntryView }) {
+  const hold = useContext(DeltaHold);
+  const at = noteDelta(v.entry.id, v.deltaToday);
+  const left = hold > 0 ? at + hold * 1000 - Date.now() : Infinity;
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (left <= 0 || left === Infinity) return;
+    const t = setTimeout(() => tick((n) => n + 1), left + 50);
+    return () => clearTimeout(t);
+  }, [at, hold]);
   const t = formatDelta(v.deltaToday, v.entry.format);
-  if (!t) return null;
+  if (!t || left <= 0) return null;
   return <span className={"delta " + ((v.deltaToday ?? 0) > 0 ? "up" : "down")}>{t}</span>;
 }
 

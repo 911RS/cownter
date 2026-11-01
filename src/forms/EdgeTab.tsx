@@ -5,6 +5,7 @@ import { seasonClass, seasonTint } from "../core/season";
 import { selectEntries } from "../core/select";
 import { EntryIcon } from "../components/EntryIcon";
 import { Skin } from "../skins/Skin";
+import { DeltaHold, noteDeltas } from "./deltaHold";
 import { ChangeFx } from "./ChangeFx";
 import { formOptClasses } from "./options";
 import { Delta, formLook, formScale, StatusMark, valueText } from "./common";
@@ -32,7 +33,9 @@ export function EdgeTab() {
   const tint = seasonTint(season, f.tint);
   const list = selectEntries([...views.values()], f);
 
+  noteDeltas(list);
   return (
+    <DeltaHold.Provider value={f.deltaHoldS ?? 0}>
     <div className={"widget-root edge-root side-" + f.side + look.className + seasonClass(season) + formOptClasses("edge", f)} ref={setRoot} style={look.style}>
       <ChangeFx f={f} views={list} />
       <div
@@ -73,5 +76,6 @@ export function EdgeTab() {
         ))}
       </div>
     </div>
+    </DeltaHold.Provider>
   );
 }

@@ -6,6 +6,7 @@ import { selectEntries } from "../core/select";
 import { EntryIcon } from "../components/EntryIcon";
 import { Morph } from "../components/Morph";
 import { Skin } from "../skins/Skin";
+import { DeltaHold, noteDeltas } from "./deltaHold";
 import { ChangeFx } from "./ChangeFx";
 import { formOptClasses } from "./options";
 import { Delta, formLook, formScale, GoalLeft, StatusMark, Streak, valueText } from "./common";
@@ -63,7 +64,9 @@ export function Island() {
     leave.current = setTimeout(() => setHover(false), 350);
   };
 
+  noteDeltas(list);
   return (
+    <DeltaHold.Provider value={f.deltaHoldS ?? 0}>
     <div className={"widget-root island-root" + look.className + seasonClass(season) + formOptClasses("island", f)} ref={setRoot} style={look.style}>
       <ChangeFx f={f} views={list} />
       <Morph
@@ -117,5 +120,6 @@ export function Island() {
         }
       />
     </div>
+    </DeltaHold.Provider>
   );
 }

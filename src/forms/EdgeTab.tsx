@@ -8,7 +8,7 @@ import { Skin } from "../skins/Skin";
 import { DeltaHold, noteDeltas } from "./deltaHold";
 import { ChangeFx } from "./ChangeFx";
 import { formOptClasses } from "./options";
-import { Delta, formLook, formScale, StatusMark, valueText } from "./common";
+import { Delta, formLook, formScale, useShuffleTurn, StatusMark, valueText } from "./common";
 
 export function EdgeTab() {
   const [cfg] = useDisplay();
@@ -27,9 +27,10 @@ export function EdgeTab() {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const f = cfg?.edge;
   useWidgetSize(root, !!f?.enabled);
+  const turn = useShuffleTurn(f);
   if (!cfg || !f) return null;
   const s = formScale(f);
-  const look = formLook(f);
+  const look = formLook(f, turn);
   const tint = seasonTint(season, f.tint);
   const list = selectEntries([...views.values()], f);
 

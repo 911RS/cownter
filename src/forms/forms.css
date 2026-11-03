@@ -138,6 +138,54 @@ html.widget, html.widget body {
 .is-bar :has(> .entry-icon) { padding-left: calc(9px * var(--s)) !important; }
 .no-delta .delta, .no-delta .pop-title b { display: none; }
 
+/* Watermark styles: the icon fills the panel behind the number */
+:is(.is-ghost, .is-tilt, .is-cover, .is-slant) :has(> .entry-icon) { position: relative; isolation: isolate; }
+:is(.is-ghost, .is-tilt, .is-cover, .is-slant) :is(.b-panel, .island, .edge, .pop) { overflow: hidden; }
+:is(.is-ghost, .is-tilt, .is-cover, .is-slant) .entry-icon {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  width: auto !important;
+  aspect-ratio: 1;
+  background: none !important;
+  overflow: visible;
+  pointer-events: none;
+}
+:is(.is-ghost, .is-tilt, .is-cover, .is-slant) .entry-icon > :is(svg, img) { width: 100%; height: 100%; }
+:is(.is-ghost, .is-tilt, .is-cover, .is-slant) .entry-icon svg { stroke: var(--accent); }
+:is(.is-ghost, .is-tilt, .is-cover, .is-slant) :has(> .entry-icon) > :not(.entry-icon) { filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9)); }
+.is-ghost .entry-icon { left: 50%; height: 340% !important; opacity: 0.5; transform: translate(-50%, -50%); }
+.is-tilt .entry-icon { right: -14%; height: 380% !important; opacity: 0.6; transform: translateY(-50%) rotate(-24deg); }
+.is-cover :has(> .entry-icon) { padding-left: calc(38px * var(--s)) !important; }
+.is-cover .entry-icon { left: calc(-22px * var(--s)); height: 360% !important; opacity: 1; transform: translateY(-50%); -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 85%); mask-image: linear-gradient(90deg, #000 45%, transparent 85%); }
+.is-slant :has(> .entry-icon) { padding-left: calc(46px * var(--s)) !important; }
+.is-slant .entry-icon { left: calc(-18px * var(--s)); height: 320% !important; opacity: 0.5; transform: translateY(-50%) rotate(-28deg); -webkit-mask-image: linear-gradient(90deg, #000 35%, transparent 80%); mask-image: linear-gradient(90deg, #000 35%, transparent 80%); }
+.is-ghost .entry-icon > img, .is-tilt .entry-icon > img { -webkit-mask-image: radial-gradient(closest-side, #000 60%, transparent); mask-image: radial-gradient(closest-side, #000 60%, transparent); }
+.is-kinetic .entry-icon { zoom: 1.6; }
+.is-sticker .entry-icon { zoom: 1.7; overflow: visible; box-shadow: 0 0 0 1.5px #fff, 0 2px 5px rgba(0, 0, 0, 0.6); transform: rotate(-9deg); }
+:is(.is-wash, .is-split) :has(> .entry-icon) { position: relative; isolation: isolate; }
+:is(.is-wash, .is-split) :is(.b-panel, .island, .edge, .pop) { overflow: hidden; }
+.is-wash .entry-icon { position: absolute; z-index: -1; left: 50%; top: 50%; width: 130% !important; height: 420% !important; border-radius: 0 !important; transform: translate(-50%, -50%); filter: blur(12px) saturate(2); opacity: 0.85; pointer-events: none; }
+.is-wash .entry-icon > :is(svg, img) { width: 100%; height: 100%; }
+.is-wash .entry-icon svg { stroke: var(--accent); }
+.is-wash :has(> .entry-icon) > :not(.entry-icon) { filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85)); }
+.is-split :has(> .entry-icon) { padding-left: calc(36px * var(--s)) !important; }
+.is-split .entry-icon { position: absolute; left: calc(-16px * var(--s)); top: 50%; width: calc(40px * var(--s)) !important; height: 400% !important; border-radius: 0 !important; transform: translateY(-50%); background: var(--hue) !important; }
+.is-split .entry-icon svg { stroke: #fff; }
+.is-split .entry-icon > img { width: calc(18px * var(--s)); height: calc(18px * var(--s)); }
+.is-kinetic .entry-icon { overflow: visible; transform-origin: 50% 100%; animation: icon-stomp 2.6s cubic-bezier(0.3, 0, 0.2, 1) infinite; }
+@keyframes icon-stomp {
+  0%, 62% { transform: none; }
+  74% { transform: translateY(-38%) scale(0.92, 1.1) rotate(-6deg); }
+  82% { transform: translateY(0) scale(1.28, 0.72); }
+  88% { transform: scale(0.94, 1.08); }
+  94% { transform: scale(1.04, 0.97); }
+  100% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-kinetic .entry-icon { animation: none; }
+}
+
 /* Overlay */
 .overlay { position: fixed; inset: 0; pointer-events: none; display: grid; place-items: center; }
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; }

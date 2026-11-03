@@ -291,7 +291,7 @@ impl DisplayConfig {
             if !matches!(f.tint.as_str(), "white" | "chroma" | "amber" | "phosphor" | "ice" | "ruby" | "violet" | "classic") {
                 f.tint = "white".into();
             }
-            if !matches!(f.icon_style.as_str(), "tile" | "big" | "fade" | "glow" | "glyph" | "bar") {
+            if !matches!(f.icon_style.as_str(), "tile" | "big" | "fade" | "glow" | "glyph" | "bar" | "ghost" | "tilt" | "cover" | "slant" | "wash" | "split" | "sticker" | "kinetic" | "shuffle") {
                 f.icon_style = "tile".into();
             }
             if !matches!(f.size.as_str(), "xs" | "s" | "m" | "l" | "xl") {

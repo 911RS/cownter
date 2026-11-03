@@ -15,6 +15,7 @@ import { BOARD_IDS, FORM_INFO } from "../forms/registry";
 import { SKINS, Skin, TINTS, type SkinGroup } from "../skins/Skin";
 import { SKIN_OPTS, skinOpt } from "../skins/options";
 import { Group as Section, prettyKey, Row, Segmented, Toggle } from "./ui";
+import { IconStylePicker } from "./IconStylePicker";
 
 const DOCKED = ["edge", "drawer"];
 const CYCLING = ["island", "orb", "notch", "tag", "pet", "pager"];
@@ -335,20 +336,10 @@ function FormSettings({
             </Row>
           )}
           {!NO_ICONS.includes(k) && f.showIcons && (
-            <Row label="Icon style" hint="Tile, a bigger tile, a colour fade from the left, a glowing badge, a bare glyph, or a colour bar on the left.">
-              <Segmented
-                value={f.iconStyle ?? "tile"}
-                onChange={(iconStyle) => onChange({ ...f, iconStyle })}
-                options={[
-                  { id: "tile", label: "Tile" },
-                  { id: "big", label: "Big" },
-                  { id: "fade", label: "Fade" },
-                  { id: "glow", label: "Glow" },
-                  { id: "glyph", label: "Glyph" },
-                  { id: "bar", label: "Bar" },
-                ]}
-              />
-            </Row>
+            <>
+              <Row label="Icon style" hint="How the number's icon is drawn. Shuffle switches style every few seconds." />
+              <IconStylePicker value={f.iconStyle ?? "tile"} view={shown[0] ?? views[0] ?? null} onChange={(iconStyle) => onChange({ ...f, iconStyle })} />
+            </>
           )}
           {!NO_DELTA.includes(k) && (
             <Row
@@ -363,8 +354,8 @@ function FormSettings({
           )}
           {!NO_DELTA.includes(k) && f.showDelta && (
             <Row
-              label="Keep it"
-              hint="All day resets at midnight. The others show it for a moment after the number moves, then hide it."
+              label="Show the +/− change for"
+              hint="All day keeps it until midnight. A time hides it that long after the number last moved."
             >
               <Segmented
                 value={String(f.deltaHoldS ?? 0)}
@@ -1229,7 +1220,7 @@ function LookPicker({
                   tint={f.tint}
                   opts={f.skinOpts}
                   text="48,213"
-                  height={24}
+                  height={17}
                 />
               </span>
               <span className="look-meta">

@@ -9,7 +9,7 @@ import { Skin } from "../skins/Skin";
 import { DeltaHold, noteDeltas } from "./deltaHold";
 import { ChangeFx } from "./ChangeFx";
 import { formOptClasses } from "./options";
-import { Delta, formLook, formScale, GoalLeft, StatusMark, Streak, valueText } from "./common";
+import { Delta, formLook, formScale, useShuffleTurn, GoalLeft, StatusMark, Streak, valueText } from "./common";
 
 export function Island() {
   const [cfg] = useDisplay();
@@ -48,9 +48,10 @@ export function Island() {
   }, [hover, n, f]);
 
   useWidgetSize(root, !!f?.enabled);
+  const turn = useShuffleTurn(f);
   if (!cfg || !f) return null;
   const s = formScale(f);
-  const look = formLook(f);
+  const look = formLook(f, turn);
   const tint = seasonTint(season, f.tint);
   const mark = season && SEASONS[season].mark;
   const cur = n ? list[idx % n] : null;

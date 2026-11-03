@@ -14,7 +14,7 @@ import { DeltaHold, noteDeltas } from "./deltaHold";
 import { ChangeFx, FxItem } from "./ChangeFx";
 import { PET_STAGES, petStage, petTitle } from "./pet";
 import { formOpt, formOptClasses } from "./options";
-import { Delta, formLook, formScale, GoalLeft, StatusMark, Streak, valueText } from "./common";
+import { Delta, formLook, formScale, useShuffleTurn, GoalLeft, StatusMark, Streak, valueText } from "./common";
 
 const PEEK_MS = 4000;
 const FLUSH = ["notch", "wings", "toptabs", "folders", "tag", "clothesline", "deck"];
@@ -599,10 +599,11 @@ export function Board({ id }: { id: string }) {
     if (f && !visible) api.widgetDone().catch(() => {});
   }, [visible, !!f]);
   useWidgetSize(visible ? root : null, visible);
+  const turn = useShuffleTurn(f);
 
   if (!cfg || !f || !visible) return null;
   const s = formScale(f);
-  const look = formLook(f);
+  const look = formLook(f, turn);
   const cur = n ? list[idx % n] : null;
   const c: Ctx = {
     f,
@@ -658,7 +659,8 @@ export function FormPreview({ id, f, views }: { id: string; f: FormCfg; views: E
   const picked = selectEntries(views, f);
   const list = picked.length ? picked : views;
   const s = formScale(f);
-  const look = formLook(f);
+  const turn = useShuffleTurn(f);
+  const look = formLook(f, turn);
   const cur = list[0] ?? null;
   const num = (v: EntryView, h: number, compact?: boolean) => <Skin skin={f.skin} tint={f.tint} opts={f.skinOpts} text={valueText(v, compact)} height={h * 1.15} status={v.status} />;
   const icon = (v: EntryView, size: number) => (f.showIcons ? <EntryIcon icon={v.entry.icon} size={size} /> : null);

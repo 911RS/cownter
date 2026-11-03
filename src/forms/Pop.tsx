@@ -7,7 +7,7 @@ import { selectEntries } from "../core/select";
 import type { EntryView } from "../core/types";
 import { EntryIcon } from "../components/EntryIcon";
 import { Skin } from "../skins/Skin";
-import { formLook, formScale, valueText } from "./common";
+import { formLook, formScale, useShuffleTurn, valueText } from "./common";
 
 const SHOW_MS = 4000;
 
@@ -49,10 +49,11 @@ export function Pop() {
   }, [cur?.key]);
 
   useWidgetSize(cur ? root : null, true);
+  const turn = useShuffleTurn(cfg?.pop);
   if (!cfg || !cur) return null;
   const f = cfg.pop;
   const s = formScale(f);
-  const look = formLook(f);
+  const look = formLook(f, turn);
   const mark = season && SEASONS[season].mark;
   const d = cur.was !== undefined ? `was ${cur.was.length > 24 ? cur.was.slice(0, 23) + "…" : cur.was}` : formatDelta(cur.diff, cur.view.entry.format);
   return (

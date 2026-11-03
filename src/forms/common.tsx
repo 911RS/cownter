@@ -58,10 +58,33 @@ function rgba(hex: string, a: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
 
+/** Icon styles Shuffle picks from. */
+export const SHUFFLE_STYLES = ["tile", "big", "fade", "glow", "glyph", "bar", "ghost", "tilt", "cover", "slant", "wash", "split", "sticker", "kinetic"] as const;
+
+/** Icon style in effect; Shuffle moves to the next style each time `turn` changes. */
+export function iconStyleOf(f: FormCfg, turn: number): string {
+  const style = f.iconStyle ?? "tile";
+  if (style !== "shuffle") return style;
+  return SHUFFLE_STYLES[((turn % SHUFFLE_STYLES.length) + SHUFFLE_STYLES.length) % SHUFFLE_STYLES.length];
+}
+
+/** Counter that ticks every few seconds while the icon style is Shuffle. */
+export function useShuffleTurn(f: FormCfg | null | undefined): number {
+  const [turn, setTurn] = useState(() => Math.floor(Math.random() * SHUFFLE_STYLES.length));
+  const on = f?.iconStyle === "shuffle";
+  const every = Math.max(3, f?.cycleS ?? 4) * 1000;
+  useEffect(() => {
+    if (!on) return;
+    const t = setInterval(() => setTurn((n) => n + 1), every);
+    return () => clearInterval(t);
+  }, [on, every]);
+  return turn;
+}
+
 /** CSS variables and classes for the look settings shared by every form. */
-export function formLook(f: FormCfg): { className: string; style: React.CSSProperties } {
+export function formLook(f: FormCfg, turn = 0): { className: string; style: React.CSSProperties } {
   return {
-    className: (f.shadow === false ? " no-shadow" : "") + (f.showIcons === false ? " no-icons" : " is-" + (f.iconStyle ?? "tile")) + (f.showDelta === false ? " no-delta" : "") + (f.clickOpens === false ? " no-click" : ""),
+    className: (f.shadow === false ? " no-shadow" : "") + (f.showIcons === false ? " no-icons" : " is-" + iconStyleOf(f, turn)) + (f.showDelta === false ? " no-delta" : "") + (f.clickOpens === false ? " no-click" : ""),
     style: {
       ["--s" as string]: formScale(f),
       ["--bg" as string]: rgba(f.bg ?? "#000000", f.bgAlpha ?? 1),

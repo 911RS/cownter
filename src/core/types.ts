@@ -237,7 +237,7 @@ export interface TestResult {
   text?: string | null;
 }
 
-export type IconStyle = "tile" | "big" | "fade" | "glow" | "glyph" | "bar";
+export type IconStyle = "tile" | "big" | "fade" | "glow" | "glyph" | "bar" | "ghost" | "tilt" | "cover" | "slant" | "wash" | "split" | "sticker" | "kinetic" | "shuffle";
 
 export interface SyncNotice {
   from: string;

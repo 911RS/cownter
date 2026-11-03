@@ -641,7 +641,7 @@ dependencies = [
 
 [[package]]
 name = "cownter"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -665,7 +665,7 @@ dependencies = [
 
 [[package]]
 name = "cownter-core"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "chrono",
  "httpdate",

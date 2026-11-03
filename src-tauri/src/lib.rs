@@ -130,6 +130,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     }
     sync_autostart(&handle, display.launch_at_login);
     windows::sync(&handle, &display);
+    windows::watch_work_area(&handle);
     refresh_tray(&handle);
     let later = handle.clone();
     tauri::async_runtime::spawn(async move {

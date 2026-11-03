@@ -30,7 +30,7 @@ fn build_widget(app: &AppHandle, label: &str) -> tauri::Result<WebviewWindow> {
         .resizable(cfg!(target_os = "linux"))
         .shadow(false)
         .focused(false)
-        .focusable(label != "overlay")
+        .focusable(label != "overlay" && !cfg!(target_os = "linux"))
         .visible(false)
         .visible_on_all_workspaces(true)
         .inner_size(10.0, 10.0);
@@ -42,6 +42,9 @@ fn build_widget(app: &AppHandle, label: &str) -> tauri::Result<WebviewWindow> {
     if let Ok(gw) = w.gtk_window() {
         use gtk::prelude::{GtkWindowExt, WidgetExt, WidgetExtManual};
         gw.set_type_hint(gtk::gdk::WindowTypeHint::Dock);
+        // Widgets never take keyboard focus, so GNOME lets newly opened apps come to the front.
+        gw.set_accept_focus(false);
+        gw.set_focus_on_map(false);
         // The input shape is smaller than the window, so the webview misses the pointer crossing it.
         gw.add_events(gtk::gdk::EventMask::ENTER_NOTIFY_MASK | gtk::gdk::EventMask::LEAVE_NOTIFY_MASK);
         let win = w.clone();
@@ -205,6 +208,35 @@ pub fn replace_all(app: &AppHandle, cfg: &DisplayConfig) {
         let size = size.to_logical::<f64>(scale);
         let _ = place(app, cfg, label, size.width, size.height, false);
     }
+}
+
+fn work_areas(app: &AppHandle) -> Vec<(i32, i32, u32, u32)> {
+    app.available_monitors()
+        .unwrap_or_default()
+        .iter()
+        .map(|m| {
+            let r = m.work_area();
+            (r.position.x, r.position.y, r.size.width, r.size.height)
+        })
+        .collect()
+}
+
+/// Re-places visible widgets whenever a monitor's work area changes (panels showing, hiding or moving).
+pub fn watch_work_area(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut last = work_areas(&app);
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            let now = work_areas(&app);
+            if now != last {
+                last = now;
+                if let Some(state) = app.try_state::<crate::state::AppState>() {
+                    replace_all(&app, &state.display());
+                }
+            }
+        }
+    });
 }
 
 /// Names of the connected monitors, primary first.
